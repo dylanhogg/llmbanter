@@ -1,0 +1,65 @@
+[tool.poetry]
+name = "llmvsllm"
+version = "0.1.0"
+description = "LLM vs. LLM: Simulates a rap battle or debate between two Large Language Models (LLMs)"
+authors = ["Dylan Hogg <dylanhogg@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/dylanhogg/llmvsllm"
+keywords = ["LLM"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+]
+# include = ["TODO: any files to include in the package"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+python-dotenv = "^1.0.1"
+click = "^8.1.7"
+typer = "^0.9.0"
+rich = "^13.7.0"
+tqdm = "^4.66.1"
+loguru = "^0.7.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+black = "^24.1.1"
+ruff = "^0.2.0"
+coverage = "^7.4.1"
+pre-commit = "^3.6.0"
+pip-audit = "^2.7.0"
+
+[tool.black]
+line-length = 120
+target-version = ['py39']
+
+[tool.poetry.scripts]
+llmvsllm = 'llmvsllm.console:typer_app'
+
+[tool.ruff]
+line-length = 120
+extend-exclude = [".joblib_cache"]
+target-version = "py39"
+
+[tool.ruff.lint]
+# https://docs.astral.sh/ruff/rules/
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "C90", # mccabe complexity
+]
+ignore = [
+    "E501", # line too long, handled by black
+    "D203", # 1 blank line required before class docstring
+]
+fixable = ["ALL"]
+unfixable = []
