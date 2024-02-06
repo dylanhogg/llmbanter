@@ -1,15 +1,14 @@
 from datetime import datetime
-from time import sleep
 from typing import Optional
 
 import typer
 from loguru import logger
 from rich import print
-from tqdm import tqdm
 from typing_extensions import Annotated
 
-from .library import consts, env, log
-from .library.classes import AppUsageException
+from llmvsllm.arena.conversation import Conversation
+from llmvsllm.library import consts, env, log
+from llmvsllm.library.classes import AppUsageException
 
 typer_app = typer.Typer()
 
@@ -22,8 +21,11 @@ def version_callback(value: bool):
 
 @typer_app.command()
 def run(
-    llm1: Annotated[str, typer.Argument(help="Name of the first Large Language Model")],
-    llm2: Annotated[str, typer.Argument(help="Name of the second Large Language Model")],
+    bot1: Annotated[str, typer.Argument(help="Name of the first bot")],
+    bot2: Annotated[str, typer.Argument(help="Name of the second bot")],
+    model1: Annotated[str, typer.Argument(help="Model of the first bot")] = consts.default_llm_model,
+    model2: Annotated[str, typer.Argument(help="Model of the second bot")] = consts.default_llm_model,
+    speak: Annotated[bool, typer.Option(help="Enable speaking")] = False,
     llm_use_localhost: Annotated[
         int, typer.Option(help="LLM use localhost:8081 instead of openai")
     ] = consts.default_llm_use_localhost,
@@ -33,15 +35,13 @@ def run(
     ] = None,
 ) -> None:
     """
-    Command entry point
+    App entry point
     """
+    log.configure()
+    logger.info(f"Start {consts.package_name}, {bot1=}, {bot2=}, {speak=}")
+    example_usage = f"Example usage: [bold green]{consts.package_name} python_language_evangelist java_language_evangelist[/bold green]"
 
     try:
-        log.configure()
-        example_usage = f"Example usage: [bold green]{consts.package_name}[/bold green]"
-
-        logger.info(f"Start {consts.package_name}, {llm1=}, {llm2=}")
-
         llm_api_key = env.get("OPENAI_API_KEY", "")
         if not llm_use_localhost and not llm_api_key:
             raise AppUsageException(
@@ -51,12 +51,10 @@ def run(
             )
 
         start = datetime.now()
-
-        # TODO: do the stuff
-        for _ in tqdm(range(5)):
-            sleep(0.1)
-
+        conversation = Conversation(bot1=bot1, bot2=bot2, model1=model1, model2=model2, speak=speak)
+        conversation.start()
         took = datetime.now() - start
+
         print("")
         print(f"[bold green]{consts.package_name} finished, took {took.total_seconds()}s.[/bold green]")
 
@@ -67,7 +65,7 @@ def run(
         print(f"[bold red]{str(ex)}[/bold red]")
         print("")
         print(f"For more information, try '{consts.package_name} --help'.")
-        logger.exception(ex)
+        logger.info(ex)
 
     except typer.Exit as ex:
         if ex.exit_code == 0:

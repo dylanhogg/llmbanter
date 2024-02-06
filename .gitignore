@@ -11,6 +11,9 @@ _temp/
 .DS_Store
 .pypirc
 
+mp3/
+conversation_transcripts/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

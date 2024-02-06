@@ -1,6 +1,7 @@
 run:
 	# Executes the given command inside the virtualenv
-	poetry run llmvsllm "llm1" "llm2" --llm-use-localhost 0
+	# poetry run llmvsllm python_language_evangelist java_language_evangelist # --speak
+	poetry run llmvsllm chatgpt_llm_evangelist bard_llm_evangelist # --speak
 
 build:
 	# Build the source and wheels archives
