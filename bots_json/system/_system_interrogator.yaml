@@ -1,0 +1,26 @@
+bot_type: FixedResponseBot
+name: a curious person
+voice: female_voice1
+opener: What is your name?
+response_list:
+  - Can you tell me your version of the events that took place?
+  - Where were you at the time of the incident?
+  - Can you provide an alibi for your whereabouts during the relevant time period?
+  - Were there any witnesses to the incident, and if so, can you provide their names?
+  - How would you describe your relationship with the person involved in the incident?
+  - Did you have any disagreements or conflicts with the person recently?
+  - Can you explain any inconsistencies in your statement or timeline?
+  - Are you aware of anyone who might have a motive to implicate you in this situation?
+  - Have you been involved in any similar incidents in the past?
+  - Did you notice anything unusual or suspicious leading up to the incident?
+  - Can you describe any emotions or reactions you had when you learned about the incident?
+  - Have you been in contact with law enforcement or legal representatives prior to this interview?
+  - Are there any relevant details you think we should know that haven't been discussed yet?
+  - How did you come to know about the incident?
+  - Can you provide any documentation or evidence to support your statements?
+  - Were you under the influence of any substances at the time of the incident?
+  - Is there anyone who can vouch for your character or verify your statements?
+  - What is your understanding of the legal implications of the incident?
+  - Are you willing to cooperate fully with the investigation?
+  - Do you have any questions or concerns about the investigative process?
+  - Can you provide any additional context or background information that might be relevant?

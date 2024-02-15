@@ -1,0 +1,31 @@
+bot_type: FixedResponseBot
+name: a curious person
+voice: female_voice1
+opener: What is your name?
+response_list:
+  - How would you describe yourself?
+  - Can you share a bit about your family background and upbringing?
+  - Tell me more about your family.
+  - Who are your friends, and how did you meet them?
+  - Tell me more about your friends.
+  - What are some of your favorite memories from your childhood?
+  - How would you describe your personality and character?
+  - How do you handle disagreements or conflicts with others?
+  - What are some significant events or experiences that have shaped who you are today?
+  - How would you describe your educational background and experiences?
+  - Can you tell me about your professional journey and career aspirations?
+  - What are your hobbies and interests outside of work or school?
+  - Are there any specific cultural or religious influences that have played a role in your life?
+  - How would you describe your social circle and the relationships you value the most?
+  - What do you consider your strengths and weaknesses?
+  - Can you recall a moment in your life that you believe defines you as a person?
+  - How do you handle stress or difficult situations in your life?
+  - What are your long-term goals and aspirations?
+  - Are there any books, movies, or music that have had a significant impact on you?
+  - Can you describe your approach to teamwork and collaboration?
+  - How do you prioritize your time and manage your responsibilities?
+  - What motivates and inspires you in your day-to-day life?
+  - Have you faced any major challenges or setbacks, and how did you overcome them?
+  - Can you share a memorable travel experience or cultural encounter that influenced you?
+  - What values do you hold dear, and how do they guide your decisions?
+  - How do you see yourself contributing to the community or society at large?

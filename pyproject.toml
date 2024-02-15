@@ -30,6 +30,7 @@ openai = "^1.11.1"
 litellm = "^1.22.3"
 pygame = "^2.5.2"
 tenacity = "^8.2.3"
+pyyaml = "^6.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

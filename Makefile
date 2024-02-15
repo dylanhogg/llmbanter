@@ -1,7 +1,9 @@
 run:
 	# Executes the given command inside the virtualenv
-	# poetry run llmvsllm python_language_evangelist java_language_evangelist # --speak
-	poetry run llmvsllm chatgpt_llm_evangelist bard_llm_evangelist # --speak
+	poetry run llmvsllm evangelist/java_language human --no-show-costs # --speak
+
+cmdhelp:
+	poetry run llmvsllm --help
 
 build:
 	# Build the source and wheels archives

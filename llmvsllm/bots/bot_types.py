@@ -4,7 +4,7 @@ from loguru import logger
 from rich import print
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from llmvsllm.arena.bot_base import BotBase
+from llmvsllm.bots.bot_base import BotBase
 
 memory = Memory(".joblib_cache", verbose=0)
 
@@ -51,7 +51,7 @@ class LLMBot(BotBase):
         first_system_message = system_messages[0]
         return first_system_message["content"]
 
-    def respond_to(self, user_input: str) -> (int, list, str, int, int):
+    def respond_to(self, user_input: str) -> tuple[int, list, str, int, int]:
         if len(self.conversation) == 0 and self.i == 0:
             # Include system prompt in start of conversation (delayed until first response call so system can be updated after instantiation)
             self.conversation = [{"role": "system", "content": self.system}]
@@ -117,3 +117,104 @@ class LLMBot(BotBase):
         else:
             logger.warning(f"Unknown model {self.model}, can't estimate cost.")
             return -1
+
+
+class HumanInputBot(BotBase):
+    def __init__(
+        self,
+        name: str,
+        first_bot: bool = False,
+        voice: str = "onyx",
+        debug: bool = False,
+        multiline: bool = False,
+    ):
+        system = ""
+        opener = None
+        super().__init__(name, system, opener, first_bot, voice, debug)
+
+        self.i = 0
+        self.temperature = "0"
+        self.model = "NA"
+        self.conversation = ["Not applicable, this bot is controlled by human input."]
+        self.multiline = multiline
+
+    def get_opener(self):
+        assert (
+            self.first_bot and self.i == 0
+        ), "get_opener() should only be called for first bot at start of conversation."
+
+        if self.multiline:
+            lines = []
+            try:
+                while True:
+                    lines.append(input("You (multiline Ctrl+d to end) (opener): "))
+            except EOFError:
+                pass
+            response = "\n".join(lines)
+            self.opener = response
+            return response
+        else:
+            while True:
+                response = input("You (opener): ").strip()
+                if response:
+                    self.opener = response
+                    return response
+
+    def respond_to(self, user_input: str) -> tuple[int, list, str, int, int]:
+        if self.multiline:
+            lines = []
+            try:
+                while True:
+                    lines.append(input("You (multiline Ctrl+d to end): "))
+            except EOFError:
+                pass
+            response = "\n".join(lines)
+            self.i += 1
+            return self.i, self.conversation, response, 0, 0
+        else:
+            while True:
+                response = input("You: ").strip()
+                if response:
+                    self.i += 1
+                    return self.i, self.conversation, response, 0, 0
+
+    def is_human(self):
+        return True
+
+    def cost_estimate_cents(self):
+        return 0
+
+
+class FixedResponseBot(BotBase):
+    def __init__(
+        self,
+        name: str,
+        opener: str,
+        response_list: list,
+        first_bot: bool = False,
+        voice: str = "onyx",
+        debug: bool = False,
+    ):
+        system = ""
+        super().__init__(name, system, opener, first_bot, voice, debug)
+
+        self.i = 0
+        self.temperature = ""
+        self.model = ""
+        self.conversation = ["Not applicable, this bot has a fixed response list."]
+        self.response_list = response_list
+
+    def respond_to(self, user_input: str) -> tuple[int, list, str, int, int]:
+        if self.first_bot and self.i == 0:
+            # Include opener in start of conversation (should only apply for the first initiating bot)
+            assert (
+                self.opener
+            ), f"first_bot was True but no opener provided for bot {self.name}. {self.i=}, {self.first_bot=}, {self.opener=}"
+            self.conversation.append({"role": "assistant", "content": self.opener})
+
+        response = self.response_list[self.i % len(self.response_list)]
+        self.i += 1
+        return self.i, self.conversation, response, 0, 0
+
+    def cost_estimate_cents(self):
+        return 0

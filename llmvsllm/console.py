@@ -6,7 +6,7 @@ from loguru import logger
 from rich import print
 from typing_extensions import Annotated
 
-from llmvsllm.arena.conversation import Conversation
+from llmvsllm.bots.conversation import Conversation
 from llmvsllm.library import consts, env, log
 from llmvsllm.library.classes import AppUsageException
 
@@ -26,6 +26,7 @@ def run(
     model1: Annotated[str, typer.Argument(help="Model of the first bot")] = consts.default_llm_model,
     model2: Annotated[str, typer.Argument(help="Model of the second bot")] = consts.default_llm_model,
     speak: Annotated[bool, typer.Option(help="Enable speaking")] = False,
+    show_costs: Annotated[bool, typer.Option(help="Show costs during usage")] = True,
     llm_use_localhost: Annotated[
         int, typer.Option(help="LLM use localhost:8081 instead of openai")
     ] = consts.default_llm_use_localhost,
@@ -51,7 +52,9 @@ def run(
             )
 
         start = datetime.now()
-        conversation = Conversation(bot1=bot1, bot2=bot2, model1=model1, model2=model2, speak=speak)
+        conversation = Conversation(
+            bot1=bot1, bot2=bot2, model1=model1, model2=model2, speak=speak, show_costs=show_costs
+        )
         conversation.start()
         took = datetime.now() - start
 

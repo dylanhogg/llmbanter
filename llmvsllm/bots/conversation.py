@@ -6,7 +6,7 @@ from pathlib import Path
 from loguru import logger
 from rich import print
 
-from llmvsllm.arena.bot_pair import AllBots, BotPair
+from llmvsllm.bots.bot_pair import BotPair
 from llmvsllm.library.sound import Sound
 
 
@@ -20,6 +20,7 @@ class Conversation:
         temperature1: float = 0.7,
         temperature2: float = 0.7,
         speak: bool = False,
+        show_costs: bool = True,
         debug: bool = False,
     ):
         self.bot1 = bot1
@@ -29,6 +30,7 @@ class Conversation:
         self.temperature1 = temperature1
         self.temperature2 = temperature2
         self.speak = speak
+        self.show_costs = show_costs
         self.debug = debug
 
     def _pprint(self, text: str):
@@ -45,7 +47,7 @@ class Conversation:
                 # Parse pause input
                 if pause_input == "%human1":
                     print("Switching bot1 to human...")
-                    human_bot = AllBots().human
+                    human_bot = bots.get_human_bot()
                     human_bot.system = bots.bot1.system
                     human_bot.conversation = bots.bot1.conversation
                     human_bot.first_bot = bots.bot1.first_bot
@@ -53,7 +55,7 @@ class Conversation:
                     break
                 elif pause_input == "%human2":
                     print("Switching bot2 to human...")
-                    human_bot = AllBots().human
+                    human_bot = bots.get_human_bot()
                     human_bot.system = bots.bot2.system
                     human_bot.conversation = bots.bot2.conversation
                     human_bot.first_bot = bots.bot2.first_bot
@@ -67,13 +69,13 @@ class Conversation:
                     break
 
     def _get_conversation_details(self, bots) -> tuple[Path, str, str]:
-        transcript_header = f"{bots.bot1.attr_name} '{bots.bot1.name}' {bots.bot1.model}@{bots.bot1.temperature} <-> {bots.bot2.attr_name} '{bots.bot2.name}' {bots.bot2.model}@{bots.bot2.temperature}"
+        transcript_header = f"{bots.bot1.filename} '{bots.bot1.name}' {bots.bot1.model}@{bots.bot1.temperature} <-> {bots.bot2.filename} '{bots.bot2.name}' {bots.bot2.model}@{bots.bot2.temperature}"
         hash = hashlib.md5(transcript_header.encode("utf-8")).hexdigest()[0:7]
         folder = Path("./conversation_transcripts/")
         folder.mkdir(parents=True, exist_ok=True)
         filename = (
             folder
-            / f"{bots.bot1.attr_name}#{bots.bot1.model}@{bots.bot1.temperature}___{bots.bot2.attr_name}#{bots.bot2.model}@{bots.bot2.temperature}_{hash}_{datetime.today().strftime('%Y%m%d.%H%M%S')}.txt"
+            / f"{bots.bot1.filename}#{bots.bot1.model}@{bots.bot1.temperature}___{bots.bot2.filename}#{bots.bot2.model}@{bots.bot2.temperature}_{hash}_{datetime.today().strftime('%Y%m%d.%H%M%S')}.txt"
         )
         return filename, hash, transcript_header
 
@@ -129,11 +131,12 @@ class Conversation:
                 # Debug info
                 total_bot_cents = bots.bot1.cost_estimate_cents() + bots.bot2.cost_estimate_cents()
                 total_cents = total_mp3_cents + total_bot_cents
-                self._pprint(
-                    f"[bright_black]({total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}, "
-                    f"{total_mp3_cents=:.1f}, {total_bot_cents=:.2f}, {total_cents=:.2f}) "
-                    f"{'*' if mp3_from_cache2 else ''}{'^' if mp3_from_cache1 else ''}[/bright_black]"
-                )
+                if self.show_costs:
+                    self._pprint(
+                        f"[bright_black]({total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}, "
+                        f"{total_mp3_cents=:.1f}, {total_bot_cents=:.2f}, {total_cents=:.2f}) "
+                        f"{'*' if mp3_from_cache2 else ''}{'^' if mp3_from_cache1 else ''}[/bright_black]"
+                    )
 
                 # Pause if both bots are non-human
                 self._parse_pause_input(bots)

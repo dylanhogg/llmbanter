@@ -14,13 +14,13 @@ class BotBase(ABC):
         first_bot: bool = False,
         voice: str = "onyx",
         debug: bool = False,
-        attr_name: str = "",
+        filename: str = "",
     ):
         self.name = name
         self.system = system
         self.opener = opener
         self.first_bot = first_bot
-        self.attr_name = attr_name
+        self.filename = filename
         self.voice = voice
         self.debug = debug
 
@@ -29,7 +29,7 @@ class BotBase(ABC):
         self.total_completion_tokens = 0
 
     @abstractmethod
-    def respond_to(self, user_input: str) -> (int, list, str, int, int):
+    def respond_to(self, user_input: str) -> tuple[int, list, str, int, int]:
         pass
 
     @abstractmethod
@@ -53,7 +53,7 @@ class BotBase(ABC):
 
     @property
     def display_name(self):
-        return self.name.lower().replace(" ", "_").replace("(", "").replace(")", "")[0:15]
+        return self.name
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__} {self.attr_name} '{self.name}' {self.model}@{self.temperature}{' (1st)' if self.first_bot else ' (2nd)'}"
+        return f"{type(self).__name__} {self.filename}.yaml '{self.name}' {self.model}@{self.temperature}"
