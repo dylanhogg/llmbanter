@@ -109,7 +109,7 @@ def run(
         logger.exception(ex)
 
     except Exception as ex:
-        print(f"[bold red]Unexpected exception: {str(ex)}[/bold red]")
+        print(f"[bold red]Unexpected exception: {type(ex)} {str(ex)}[/bold red]")
         print(example_usage)
         print("")
         print(f"For more information, try '{consts.package_name} --help'.")

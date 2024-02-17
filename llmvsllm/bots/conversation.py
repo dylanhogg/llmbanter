@@ -6,6 +6,7 @@ from pathlib import Path
 from loguru import logger
 from omegaconf import DictConfig
 from rich import print
+from rich.console import Console
 
 from llmvsllm.bots.bot_pair import BotPair
 from llmvsllm.library.sound import Sound
@@ -80,6 +81,9 @@ class Conversation:
         api_key = os.environ.get("OPENAI_API_KEY", None)
         assert api_key, "OPENAI_API_KEY environment variable must be set"
 
+        console = Console()
+        spinner = "layer"
+
         bots = self._initialise_bots()
         self._pprint("Conversation set up:")
         self._pprint(f"{bots.bot1=}")
@@ -107,7 +111,14 @@ class Conversation:
             f.write(f"{transcript_header}\n")
             while True:
                 # Bot 2 responds to Bot 1 opener
-                i, response2 = bots.bot2.respond_to(response1)
+                if bots.bot2.is_human():
+                    i, response2 = bots.bot2.respond_to(response1)
+                else:
+                    with console.status(
+                        f"[u][white]{bots.bot2.display_name}:[/white][/u]", spinner=spinner, spinner_style="magenta1"
+                    ):
+                        i, response2 = bots.bot2.respond_to(response1)
+
                 self._pprint(f"[u][white]{bots.bot2.display_name}:[/white][/u] [magenta1]{response2}[/magenta1]")
                 f.write(f"\n{'-'*80}\n{bots.bot2.display_name}: {response2}\n")
                 f.flush()
@@ -139,7 +150,13 @@ class Conversation:
                 self._pprint(f"[white]{i+1}.[/white]")
 
                 # Bot 1 responds to Bot 2
-                i, response1 = bots.bot1.respond_to(response2)
+                if bots.bot1.is_human():
+                    i, response1 = bots.bot1.respond_to(response2)
+                else:
+                    with console.status(
+                        f"[u][white]{bots.bot1.display_name}:[/white][/u]", spinner=spinner, spinner_style="cyan2"
+                    ):
+                        i, response1 = bots.bot1.respond_to(response2)
                 self._pprint(f"[u][white]{bots.bot1.display_name}:[/white][/u] [cyan2]{response1}[/cyan2]")
 
                 f.write(f"\n{'-'*80}\n{bots.bot1.display_name}: {response1}\n")
