@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
+from omegaconf import DictConfig
 from rich import print
 
 from llmvsllm.bots.bot_pair import BotPair
@@ -13,24 +14,17 @@ from llmvsllm.library.sound import Sound
 class Conversation:
     def __init__(
         self,
-        bot1: str,
-        bot2: str,
-        model1: str,
-        model2: str,
-        temperature1: float = 0.7,
-        temperature2: float = 0.7,
-        speak: bool = False,
-        show_costs: bool = True,
+        config: DictConfig,
         debug: bool = False,
     ):
-        self.bot1 = bot1
-        self.bot2 = bot2
-        self.model1 = model1
-        self.model2 = model2
-        self.temperature1 = temperature1
-        self.temperature2 = temperature2
-        self.speak = speak
-        self.show_costs = show_costs
+        self.bot1 = config.bot1
+        self.bot2 = config.bot2
+        self.model1 = config.model1
+        self.model2 = config.model2
+        self.temperature1 = config.temperature1
+        self.temperature2 = config.temperature2
+        self.speak = config.speak
+        self.show_costs = config.show_costs
         self.debug = debug
 
     def _pprint(self, text: str):
@@ -88,9 +82,8 @@ class Conversation:
 
         bots = self._initialise_bots()
         self._pprint("Conversation set up:")
-        self._pprint(f"Bot1: {bots.bot1} <-> Bot2: {bots.bot2}")
-        self._pprint(f"{self.speak=}, {self.debug=}")
-        self._pprint(f"{bots.bot1=}\n{bots.bot2=}")
+        self._pprint(f"{bots.bot1=}")
+        self._pprint(f"{bots.bot2=}")
         print()
 
         total_prompt_tokens = 0
@@ -114,7 +107,7 @@ class Conversation:
             f.write(f"{transcript_header}\n")
             while True:
                 # Bot 2 responds to Bot 1 opener
-                i, conversation2, response2, prompt_tokens2, completion_tokens2 = bots.bot2.respond_to(response1)
+                i, response2 = bots.bot2.respond_to(response1)
                 self._pprint(f"[u][white]{bots.bot2.display_name}:[/white][/u] [magenta1]{response2}[/magenta1]")
                 f.write(f"\n{'-'*80}\n{bots.bot2.display_name}: {response2}\n")
                 f.flush()
@@ -124,14 +117,15 @@ class Conversation:
                     )
                     Sound.play_mp3(mp3_file2)
                     total_mp3_cents += estimated_cost_cents2
-                total_prompt_tokens += prompt_tokens2
-                total_completion_tokens += completion_tokens2
-                total_chars += len(response2)
 
                 # Debug info
                 total_bot_cents = bots.bot1.cost_estimate_cents() + bots.bot2.cost_estimate_cents()
                 total_cents = total_mp3_cents + total_bot_cents
                 if self.show_costs:
+                    total_prompt_tokens = bots.bot1.total_prompt_tokens + bots.bot2.total_prompt_tokens
+                    total_completion_tokens = bots.bot1.total_completion_tokens + bots.bot2.total_completion_tokens
+                    total_chars = bots.bot1.total_chars + bots.bot2.total_chars
+
                     self._pprint(
                         f"[bright_black]({total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}, "
                         f"{total_mp3_cents=:.1f}, {total_bot_cents=:.2f}, {total_cents=:.2f}) "
@@ -145,7 +139,7 @@ class Conversation:
                 self._pprint(f"[white]{i+1}.[/white]")
 
                 # Bot 1 responds to Bot 2
-                i, conversation1, response1, prompt_tokens1, completion_tokens1 = bots.bot1.respond_to(response2)
+                i, response1 = bots.bot1.respond_to(response2)
                 self._pprint(f"[u][white]{bots.bot1.display_name}:[/white][/u] [cyan2]{response1}[/cyan2]")
 
                 f.write(f"\n{'-'*80}\n{bots.bot1.display_name}: {response1}\n")
@@ -156,6 +150,3 @@ class Conversation:
                     )
                     Sound.play_mp3(mp3_file1)
                     total_mp3_cents += estimated_cost_cents1
-                total_prompt_tokens += prompt_tokens1
-                total_completion_tokens += completion_tokens1
-                total_chars += len(response1)

@@ -3,6 +3,7 @@ from typing import Optional
 
 import typer
 from loguru import logger
+from omegaconf import OmegaConf
 from rich import print
 from typing_extensions import Annotated
 
@@ -25,6 +26,12 @@ def run(
     bot2: Annotated[str, typer.Argument(help="Name of the second bot")],
     model1: Annotated[str, typer.Argument(help="Model of the first bot")] = consts.default_llm_model,
     model2: Annotated[str, typer.Argument(help="Model of the second bot")] = consts.default_llm_model,
+    temperature1: Annotated[
+        float, typer.Argument(help="Temperature of the first bot")
+    ] = consts.default_llm_temperature,
+    temperature2: Annotated[
+        float, typer.Argument(help="Temperature of the second bot")
+    ] = consts.default_llm_temperature,
     speak: Annotated[bool, typer.Option(help="Enable speaking")] = False,
     show_costs: Annotated[bool, typer.Option(help="Show costs during usage")] = True,
     llm_use_localhost: Annotated[
@@ -38,11 +45,31 @@ def run(
     """
     App entry point
     """
+    typer_args = locals()
+    config = OmegaConf.create(typer_args)
+
     log.configure()
-    logger.info(f"Start {consts.package_name}, {bot1=}, {bot2=}, {speak=}")
+    logger.info(f"Start {consts.package_name}, {config=}")
+    print(f"Start {consts.package_name}, {config=}")
     example_usage = f"Example usage: [bold green]{consts.package_name} python_language_evangelist java_language_evangelist[/bold green]"
 
     try:
+        expected_typer_args = {
+            "bot1",
+            "bot2",
+            "llm_use_localhost",
+            "model1",
+            "model2",
+            "show_costs",
+            "speak",
+            "temperature1",
+            "temperature2",
+            "version",
+        }
+        assert (
+            typer_args.keys() == expected_typer_args
+        ), f"Typer arg list: {list(typer_args.keys())}, was not as expected: {expected_typer_args}"
+
         llm_api_key = env.get("OPENAI_API_KEY", "")
         if not llm_use_localhost and not llm_api_key:
             raise AppUsageException(
@@ -52,40 +79,38 @@ def run(
             )
 
         start = datetime.now()
-        conversation = Conversation(
-            bot1=bot1, bot2=bot2, model1=model1, model2=model2, speak=speak, show_costs=show_costs
-        )
+        conversation = Conversation(config=config)
         conversation.start()
         took = datetime.now() - start
 
         print("")
         print(f"[bold green]{consts.package_name} finished, took {took.total_seconds()}s.[/bold green]")
 
-        raise typer.Exit(0)
+        raise typer.Exit(consts.success_code)
 
     except AppUsageException as ex:
-        print(example_usage)
         print(f"[bold red]{str(ex)}[/bold red]")
+        print(example_usage)
         print("")
         print(f"For more information, try '{consts.package_name} --help'.")
         logger.info(ex)
 
     except typer.Exit as ex:
-        if ex.exit_code == 0:
+        if ex.exit_code == consts.success_code:
             print()
             print(
                 f"[bold green]Goodbye and thanks for using {consts.package_name}! Please consider starring the project on github: https://github.com/dylanhogg/{consts.package_name}[/bold green]"
             )
             return
-        print(example_usage)
         print(f"[bold red]Unexpected error code: {str(ex)}[/bold red]")
+        print(example_usage)
         print("")
         print(f"For more information, try '{consts.package_name} --help'.")
         logger.exception(ex)
 
     except Exception as ex:
-        print(example_usage)
         print(f"[bold red]Unexpected exception: {str(ex)}[/bold red]")
+        print(example_usage)
         print("")
         print(f"For more information, try '{consts.package_name} --help'.")
         logger.exception(ex)

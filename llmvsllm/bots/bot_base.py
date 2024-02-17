@@ -24,12 +24,16 @@ class BotBase(ABC):
         self.voice = voice
         self.debug = debug
 
+        self.temperature = None
+        self.model = None
         self.conversation = []
+        self.total_tokens = 0
         self.total_prompt_tokens = 0
         self.total_completion_tokens = 0
+        self.total_chars = 0
 
     @abstractmethod
-    def respond_to(self, user_input: str) -> tuple[int, list, str, int, int]:
+    def respond_to(self, user_input: str) -> tuple[int, str]:
         pass
 
     @abstractmethod
@@ -55,5 +59,6 @@ class BotBase(ABC):
     def display_name(self):
         return self.name
 
+    @abstractmethod
     def __repr__(self) -> str:
-        return f"{type(self).__name__} {self.filename}.yaml '{self.name}' {self.model}@{self.temperature}"
+        return f"{type(self).__name__}"

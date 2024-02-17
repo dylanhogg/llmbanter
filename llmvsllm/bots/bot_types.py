@@ -1,10 +1,9 @@
 from joblib import Memory
-from litellm import completion
 from loguru import logger
 from rich import print
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 from llmvsllm.bots.bot_base import BotBase
+from llmvsllm.library import llm
 
 memory = Memory(".joblib_cache", verbose=0)
 
@@ -26,23 +25,8 @@ class LLMBot(BotBase):
         self.model = model
         self.temperature = temperature
 
-    @staticmethod
-    @memory.cache()
-    @retry(
-        wait=wait_exponential(multiplier=5, min=2, max=600),
-        stop=stop_after_attempt(3),
-        before_sleep=lambda state: logger.warning(f"Retrying OpenAI API call #{state.attempt_number}..."),
-    )
-    def _openai_call(model: str, messages: list, temperature: float, debug: bool = False):
-        assert temperature is not None, f"Expected value for: {temperature=}"
-        # TODO: handle errors like:
-        # BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 4097 tokens. However, your messages resulted in 12197 tokens. Please reduce the length of the messages.", 'type': 'invalid_request_error', 'param': 'messages', 'code': 'context_length_exceeded'}}
-        completion_response = completion(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-        )
-        return completion_response
+    def __repr__(self) -> str:
+        return f"{type(self).__name__} {self.filename}.yaml '{self.name}' {self.model}@{self.temperature}"
 
     def augmented_conversation_system(self):
         system_messages = [x for x in self.conversation if x["role"] == "system"]
@@ -51,7 +35,7 @@ class LLMBot(BotBase):
         first_system_message = system_messages[0]
         return first_system_message["content"]
 
-    def respond_to(self, user_input: str) -> tuple[int, list, str, int, int]:
+    def respond_to(self, user_input: str) -> tuple[int, str]:
         if len(self.conversation) == 0 and self.i == 0:
             # Include system prompt in start of conversation (delayed until first response call so system can be updated after instantiation)
             self.conversation = [{"role": "system", "content": self.system}]
@@ -84,22 +68,21 @@ class LLMBot(BotBase):
             self.conversation.append({"role": "assistant", "content": self.opener})
 
         self.conversation.append({"role": "user", "content": user_input})
-        completion = self._openai_call(self.model, self.conversation, self.temperature, self.debug)
-        assert completion.model.startswith(self.model)
-        response = completion.choices[0].message.content
-        self.conversation.append({"role": "assistant", "content": response})
+
+        chat_response, total_tokens, prompt_tokens, completion_tokens = llm.make_call(
+            self.model, self.temperature, self.conversation, self.debug
+        )
+        self.conversation.append({"role": "assistant", "content": chat_response})
+        self.total_prompt_tokens += prompt_tokens
+        self.total_completion_tokens += completion_tokens
+        self.total_tokens += total_tokens
+        self.total_chars += len(chat_response)
         self.i += 1
 
-        self.total_prompt_tokens += completion.usage.prompt_tokens
-        self.total_completion_tokens += completion.usage.completion_tokens
-
-        response_nl = response.replace("\\n", "\n")
+        response_nl = chat_response.replace("\\n", "\n")
         return (
             self.i,
-            self.conversation,
             response_nl,
-            completion.usage.prompt_tokens,
-            completion.usage.completion_tokens,
         )
 
     def cost_estimate_cents(self):
@@ -133,10 +116,10 @@ class HumanInputBot(BotBase):
         super().__init__(name, system, opener, first_bot, voice, debug)
 
         self.i = 0
-        self.temperature = "0"
-        self.model = "NA"
-        self.conversation = ["Not applicable, this bot is controlled by human input."]
         self.multiline = multiline
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__} '{self.name}'"
 
     def get_opener(self):
         assert (
@@ -160,7 +143,7 @@ class HumanInputBot(BotBase):
                     self.opener = response
                     return response
 
-    def respond_to(self, user_input: str) -> tuple[int, list, str, int, int]:
+    def respond_to(self, user_input: str) -> tuple[int, str]:
         if self.multiline:
             lines = []
             try:
@@ -170,13 +153,13 @@ class HumanInputBot(BotBase):
                 pass
             response = "\n".join(lines)
             self.i += 1
-            return self.i, self.conversation, response, 0, 0
+            return self.i, response
         else:
             while True:
                 response = input("You: ").strip()
                 if response:
                     self.i += 1
-                    return self.i, self.conversation, response, 0, 0
+                    return self.i, response
 
     def is_human(self):
         return True
@@ -204,7 +187,7 @@ class FixedResponseBot(BotBase):
         self.conversation = ["Not applicable, this bot has a fixed response list."]
         self.response_list = response_list
 
-    def respond_to(self, user_input: str) -> tuple[int, list, str, int, int]:
+    def respond_to(self, user_input: str) -> tuple[int, str]:
         if self.first_bot and self.i == 0:
             # Include opener in start of conversation (should only apply for the first initiating bot)
             assert (
@@ -214,7 +197,7 @@ class FixedResponseBot(BotBase):
 
         response = self.response_list[self.i % len(self.response_list)]
         self.i += 1
-        return self.i, self.conversation, response, 0, 0
+        return self.i, response
 
     def cost_estimate_cents(self):
         return 0
