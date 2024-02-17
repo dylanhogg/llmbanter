@@ -1,6 +1,7 @@
 run:
 	# Executes the given command inside the virtualenv
-	poetry run llmvsllm evangelist/java_language human --no-show-costs # --speak
+	# poetry run llmvsllm evangelist/java_language human # --no-show-costs # --speak
+	poetry run llmvsllm evangelist/python_language evangelist/java_language # --no-show-costs # --speak
 
 cmdhelp:
 	poetry run llmvsllm --help
