@@ -8,7 +8,11 @@ from llmvsllm.library import env
 def configure(remove_existing=True, logfile="./log/app.log"):
     if remove_existing:
         logger.remove()
-    logger.add(sys.stderr, level=env.get("LOG_STDERR_LEVEL", "ERROR"))
+
+    stderr_level = env.get("LOG_STDERR_LEVEL", "")
+    if stderr_level:
+        logger.add(sys.stderr, level=stderr_level)
+
     logger.add(
         logfile,
         level=env.get("LOG_FILE_LEVEL", "WARNING"),
