@@ -1,11 +1,8 @@
-from joblib import Memory
 from loguru import logger
 from rich import print
 
 from llmvsllm.bots.bot_base import BotBase
 from llmvsllm.library import llm
-
-memory = Memory(".joblib_cache", verbose=0)
 
 
 class LLMBot(BotBase):
@@ -70,17 +67,16 @@ class LLMBot(BotBase):
 
         self.conversation.append({"role": "user", "content": user_input})
 
-        chat_response, total_tokens, prompt_tokens, completion_tokens = llm.make_call(
-            self.model, self.temperature, self.conversation, self.debug
-        )
-        self.conversation.append({"role": "assistant", "content": chat_response})
-        self.total_prompt_tokens += prompt_tokens
-        self.total_completion_tokens += completion_tokens
-        self.total_tokens += total_tokens
-        self.total_chars += len(chat_response)
+        llm_result = llm.get_response(self.clean_name, self.model, self.temperature, self.conversation, self.debug)
+        self.conversation.append({"role": "assistant", "content": llm_result.chat_response})
+        # TODO: adjust tokens by cache_hit value!
+        self.total_prompt_tokens += llm_result.prompt_tokens
+        self.total_completion_tokens += llm_result.completion_tokens
+        self.total_tokens += llm_result.total_tokens
+        self.total_chars += len(llm_result.chat_response)
         self.i += 1
 
-        response_nl = chat_response.replace("\\n", "\n")
+        response_nl = llm_result.chat_response.replace("\\n", "\n")
         return (
             self.i,
             response_nl,

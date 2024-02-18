@@ -4,11 +4,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 import yaml
-from joblib import Memory
 
 from llmvsllm.library.classes import AppUsageException
-
-memory = Memory(".joblib_cache", verbose=0)
 
 
 class BotBase(ABC):
@@ -68,6 +65,10 @@ class BotBase(ABC):
     @property
     def display_name(self):
         return self.name
+
+    @property
+    def clean_name(self):
+        return self.name.lower().strip().replace(" ", "-")
 
     @abstractmethod
     def __repr__(self) -> str:

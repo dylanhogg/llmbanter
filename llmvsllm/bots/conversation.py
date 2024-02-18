@@ -101,7 +101,7 @@ class Conversation:
         self._pprint("Conversation:\n[white]1.[/white]")
         self._pprint(f"[u][white]{bots.bot1.display_name} (opener):[/white][/u] [cyan2]{response1}[/cyan2]")
         if self.speak and not bots.bot1.is_human():
-            mp3_file, total_mp3_cents, mp3_from_cache = Sound.to_mp3(response1, bots.bot1.voice, bots.bot1.name)
+            mp3_file, total_mp3_cents, mp3_from_cache = Sound.to_mp3(response1, bots.bot1.voice, bots.bot1.clean_name)
             Sound.play_mp3(mp3_file)
 
         # Start conversation
@@ -125,14 +125,14 @@ class Conversation:
                 f.flush()
                 if self.speak and not bots.bot2.is_human():
                     mp3_file2, estimated_cost_cents2, mp3_from_cache2 = Sound.to_mp3(
-                        response2, bots.bot2.voice, bots.bot2.name
+                        response2, bots.bot2.voice, bots.bot2.clean_name
                     )
                     Sound.play_mp3(mp3_file2)
                     total_mp3_cents += estimated_cost_cents2
 
                 # Debug info
-                total_bot_cents = bots.bot1.cost_estimate_cents() + bots.bot2.cost_estimate_cents()
-                total_cents = total_mp3_cents + total_bot_cents
+                total_llm_cents = bots.bot1.cost_estimate_cents() + bots.bot2.cost_estimate_cents()
+                total_cents = total_mp3_cents + total_llm_cents
                 if self.show_costs:
                     total_prompt_tokens = bots.bot1.total_prompt_tokens + bots.bot2.total_prompt_tokens
                     total_completion_tokens = bots.bot1.total_completion_tokens + bots.bot2.total_completion_tokens
@@ -140,7 +140,7 @@ class Conversation:
 
                     self._pprint(
                         f"[bright_black]({total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}, "
-                        f"{total_mp3_cents=:.1f}, {total_bot_cents=:.2f}, {total_cents=:.2f}) "
+                        f"{total_mp3_cents=:.1f}, {total_llm_cents=:.2f}, {total_cents=:.2f}) "
                         f"{'*' if mp3_from_cache2 else ''}{'^' if mp3_from_cache1 else ''}[/bright_black]"
                     )
 
@@ -164,7 +164,7 @@ class Conversation:
                 f.flush()
                 if self.speak and not bots.bot1.is_human():
                     mp3_file1, estimated_cost_cents1, mp3_from_cache1 = Sound.to_mp3(
-                        response1, bots.bot1.voice, bots.bot1.name
+                        response1, bots.bot1.voice, bots.bot1.clean_name
                     )
                     Sound.play_mp3(mp3_file1)
                     total_mp3_cents += estimated_cost_cents1

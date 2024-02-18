@@ -1,53 +1,67 @@
-from joblib import Memory
+import hashlib
+import pickle
+from pathlib import Path
+
 from litellm import completion
-from loguru import logger
-from tenacity import retry, retry_if_not_exception_type, stop_after_attempt, wait_exponential
 
-from .classes import AppUsageException
+from llmvsllm.library.classes import LLMResult
 
-memory = Memory(".joblib_cache", verbose=0)
+# def log_retry(state):
+#     msg = (
+#         f"Tenacity retry {state.fn.__name__}: {state.attempt_number=}, {state.idle_for=}, {state.seconds_since_start=}"
+#     )
+#     if state.attempt_number < 1:
+#         logger.info(msg)
+#     else:
+#         logger.exception(msg)
 
-# TODO: try/catch! E.g.
-#       APIError: HTTP code 502 from API
-#       Timeout: Request timed out: HTTPSConnectionPool(host='api.openai.com', port=443): Read timed out. (read timeout=600)
 
+# @retry(
+#     wait=wait_exponential(multiplier=2, min=5, max=600),
+#     stop=stop_after_attempt(3),
+#     before_sleep=log_retry,
+#     retry=retry_if_not_exception_type(AppUsageException),
+# )
+def _get_response_cached(bot_name: str, model: str, temperature: float, messages: list, cache_folder="./.cache/llm"):
+    args = f"{bot_name}-{model}@{temperature}-{messages}"
+    args_hash = hashlib.sha256(args.encode()).hexdigest()
+    filename_hash = f"{bot_name}_{model}_{temperature}_{args_hash}.pkl"
 
-def log_retry(state):
-    msg = (
-        f"Tenacity retry {state.fn.__name__}: {state.attempt_number=}, {state.idle_for=}, {state.seconds_since_start=}"
-    )
-    if state.attempt_number < 1:
-        logger.info(msg)
+    folder = Path(cache_folder) / bot_name
+    folder.mkdir(parents=True, exist_ok=True)
+    filepath = folder / filename_hash
+
+    if filepath.exists():
+        with open(filepath, "rb") as f:
+            api_response = pickle.load(f)
+            cache_hit = True
     else:
-        logger.exception(msg)
+        # TODO: handle errors like:
+        # BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 4097 tokens. However, your messages resulted in 12197 tokens. Please reduce the length of the messages.", 'type': 'invalid_request_error', 'param': 'messages', 'code': 'context_length_exceeded'}}
+        # APIError: HTTP code 502 from API, Timeout: Request timed out: HTTPSConnectionPool(host='api.openai.com', port=443): Read timed out. (read timeout=600)
+        api_response = completion(
+            model=model,
+            temperature=temperature,
+            messages=messages,
+        )
+        assert api_response.model.startswith(model)
+        with open(filepath, "wb") as f:
+            pickle.dump(api_response, f)
+        cache_hit = False
+
+    return api_response, cache_hit
 
 
-@memory.cache()
-@retry(
-    wait=wait_exponential(multiplier=2, min=5, max=600),
-    stop=stop_after_attempt(3),
-    before_sleep=log_retry,
-    retry=retry_if_not_exception_type(AppUsageException),
-)
-def make_call(model: str, temperature: float, messages: list, debug: bool = False) -> tuple[str, int, int, int]:
+def get_response(bot_name: str, model: str, temperature: float, messages: list, debug: bool = False) -> LLMResult:
     assert model is not None, f"Expected value for: {model=}"
     assert temperature is not None, f"Expected value for: {temperature=}"
     assert len(messages) > 0, f"Expected value for: {messages=}"
     # TODO: assert messages contain a single {"role": "system"} entry
 
-    # TODO: handle errors like:
-    # BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 4097 tokens. However, your messages resulted in 12197 tokens. Please reduce the length of the messages.", 'type': 'invalid_request_error', 'param': 'messages', 'code': 'context_length_exceeded'}}
-
-    api_response = completion(
-        model=model,
-        temperature=temperature,
-        messages=messages,
-    )
-    assert api_response.model.startswith(model)
-
+    api_response, cache_hit = _get_response_cached(bot_name, model, temperature, messages)
     chat_response = api_response.choices[0].message.content
     total_tokens = int(api_response["usage"]["total_tokens"])
     prompt_tokens = int(api_response["usage"]["prompt_tokens"])
     completion_tokens = int(api_response["usage"]["completion_tokens"])
 
-    return chat_response, total_tokens, prompt_tokens, completion_tokens  # TODO: dataclass return type
+    return LLMResult(chat_response, total_tokens, prompt_tokens, completion_tokens, cache_hit)

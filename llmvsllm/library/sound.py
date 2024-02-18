@@ -50,17 +50,19 @@ class Sound:
     # TODO: Consider integrating with https://github.com/myshell-ai/openvoice
     # TODO: Consider integrating with https://github.com/Vaibhavs10/insanely-fast-whisper
     @staticmethod
-    def to_mp3(text, voice, bot_name, tts_service="openai", delay_on_cache_hit=0.3) -> (Path, float, bool):
+    def to_mp3(
+        text, voice, bot_name, tts_service="openai", delay_on_cache_hit=0.3, cache_folder="./.cache/mp3"
+    ) -> tuple[Path, float, bool]:
         def get_valid_filename(s):
             s = s.replace(" ", "_").strip()
             return "".join(x for x in s if (x.isalnum() or x in "_-"))
 
-        bot_name = bot_name.lower().replace(" ", "_").strip()
-        hash_value = hashlib.md5(text.encode("utf-8") + voice.encode("utf-8") + bot_name.encode("utf-8")).hexdigest()
+        args = f"{text}-{voice}-{bot_name}"
+        args_hash = hashlib.sha256(args.encode()).hexdigest()
         short_text = get_valid_filename(text[0:30].lower().replace(" ", "_").strip())
-        filename_hash = f"{bot_name}_{tts_service}_{voice}_{short_text}_{hash_value}.mp3"
+        filename_hash = f"{bot_name}_{tts_service}_{voice}_{short_text}_{args_hash}.mp3"
 
-        folder = Path("./mp3")
+        folder = Path(cache_folder)
         folder.mkdir(parents=True, exist_ok=True)
         filepath = folder / filename_hash
 
