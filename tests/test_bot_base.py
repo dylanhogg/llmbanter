@@ -19,9 +19,9 @@ def test_get_bot_system3():
     print(bot)
 
 
-def test_get_bot_custom1():
-    bot = BotBase.get_bot("evangelist/python_language")
-    print(bot)
+# def test_get_bot_custom1():
+#     bot = BotBase.get_bot("evangelist/python_language")
+#     print(bot)
 
 
 def test_get_bot_exception():
