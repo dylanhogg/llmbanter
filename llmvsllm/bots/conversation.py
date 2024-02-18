@@ -8,6 +8,7 @@ from omegaconf import DictConfig
 from rich import print
 from rich.console import Console
 
+from llmvsllm.bots.bot_base import BotBase
 from llmvsllm.bots.bot_pair import BotPair
 from llmvsllm.library.sound import Sound
 
@@ -42,7 +43,7 @@ class Conversation:
                 # Parse pause input
                 if pause_input == "%human1":
                     print("Switching bot1 to human...")
-                    human_bot = bots.get_human_bot()
+                    human_bot = BotBase.get_human_bot()
                     human_bot.system = bots.bot1.system
                     human_bot.conversation = bots.bot1.conversation
                     human_bot.first_bot = bots.bot1.first_bot
@@ -50,7 +51,7 @@ class Conversation:
                     break
                 elif pause_input == "%human2":
                     print("Switching bot2 to human...")
-                    human_bot = bots.get_human_bot()
+                    human_bot = BotBase.get_human_bot()
                     human_bot.system = bots.bot2.system
                     human_bot.conversation = bots.bot2.conversation
                     human_bot.first_bot = bots.bot2.first_bot

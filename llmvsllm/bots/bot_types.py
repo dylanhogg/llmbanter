@@ -11,6 +11,7 @@ memory = Memory(".joblib_cache", verbose=0)
 class LLMBot(BotBase):
     def __init__(
         self,
+        version: float,
         name: str,
         system: str,
         opener: str,
@@ -20,7 +21,7 @@ class LLMBot(BotBase):
         temperature: float = None,
         debug: bool = False,
     ):
-        super().__init__(name, system, opener, first_bot, voice, debug)
+        super().__init__(version, name, system, opener, first_bot, voice, debug)
         self.i = 0
         self.model = model
         self.temperature = temperature
@@ -105,6 +106,7 @@ class LLMBot(BotBase):
 class HumanInputBot(BotBase):
     def __init__(
         self,
+        version: float,
         name: str,
         first_bot: bool = False,
         voice: str = "onyx",
@@ -113,7 +115,7 @@ class HumanInputBot(BotBase):
     ):
         system = ""
         opener = None
-        super().__init__(name, system, opener, first_bot, voice, debug)
+        super().__init__(version, name, system, opener, first_bot, voice, debug)
 
         self.i = 0
         self.multiline = multiline
@@ -171,6 +173,7 @@ class HumanInputBot(BotBase):
 class FixedResponseBot(BotBase):
     def __init__(
         self,
+        version: float,
         name: str,
         opener: str,
         response_list: list,
@@ -179,13 +182,16 @@ class FixedResponseBot(BotBase):
         debug: bool = False,
     ):
         system = ""
-        super().__init__(name, system, opener, first_bot, voice, debug)
+        super().__init__(version, name, system, opener, first_bot, voice, debug)
 
         self.i = 0
         self.temperature = ""
         self.model = ""
         self.conversation = ["Not applicable, this bot has a fixed response list."]
         self.response_list = response_list
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__} '{self.name}'"
 
     def respond_to(self, user_input: str) -> tuple[int, str]:
         if self.first_bot and self.i == 0:
