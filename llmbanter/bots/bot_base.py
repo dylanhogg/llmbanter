@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 
-from llmvsllm.library.classes import AppUsageException
+from llmbanter.library.classes import AppUsageException
 
 
 class BotBase(ABC):
@@ -119,7 +119,7 @@ class BotBase(ABC):
             with open(file_path) as f:
                 data = yaml.safe_load(f)
                 bot_type = data.pop("bot_type")
-                bot_types_module = importlib.import_module("llmvsllm.bots.bot_types")
+                bot_types_module = importlib.import_module("llmbanter.bots.bot_types")
                 DynamicBotClass = getattr(bot_types_module, bot_type)
                 found_bot = DynamicBotClass(**data)
                 found_bot.filename = bot_name

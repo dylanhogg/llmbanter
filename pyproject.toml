@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "llmvsllm"
+name = "llmbanter"
 version = "0.1.0"
-description = "LLM vs. LLM: Simulates a rap battle or debate between two Large Language Models (LLMs)"
+description = "LLM Banter: See 2 large language models (LLMs) banter, debate and chat with each other."
 authors = ["Dylan Hogg <dylanhogg@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/dylanhogg/llmvsllm"
+repository = "https://github.com/dylanhogg/llmbanter"
 keywords = ["LLM"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -45,7 +45,7 @@ line-length = 120
 target-version = ['py39']
 
 [tool.poetry.scripts]
-llmvsllm = 'llmvsllm.console:typer_app'
+llmbanter = 'llmbanter.console:typer_app'
 
 [tool.ruff]
 line-length = 120

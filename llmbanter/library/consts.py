@@ -1,6 +1,6 @@
 import pkg_resources
 
-package_name = "llmvsllm"
+package_name = "llmbanter"
 version = pkg_resources.get_distribution(package_name).version
 success_code = 0
 

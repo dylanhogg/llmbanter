@@ -1,4 +1,4 @@
-from llmvsllm.bots.bot_base import BotBase
+from llmbanter.bots.bot_base import BotBase
 
 
 class BotPair:

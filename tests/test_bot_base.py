@@ -1,7 +1,7 @@
 import pytest
 
-from llmvsllm.bots.bot_base import BotBase
-from llmvsllm.library.classes import AppUsageException
+from llmbanter.bots.bot_base import BotBase
+from llmbanter.library.classes import AppUsageException
 
 
 def test_get_bot_system1():

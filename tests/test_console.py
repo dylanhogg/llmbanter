@@ -1,4 +1,4 @@
-from llmvsllm import console
+from llmbanter import console
 
 
 def test_console_run1():

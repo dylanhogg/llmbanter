@@ -7,9 +7,9 @@ from omegaconf import OmegaConf
 from rich import print
 from typing_extensions import Annotated
 
-from llmvsllm.bots.conversation import Conversation
-from llmvsllm.library import consts, env, log
-from llmvsllm.library.classes import AppUsageException
+from llmbanter.bots.conversation import Conversation
+from llmbanter.library import consts, env, log
+from llmbanter.library.classes import AppUsageException
 
 typer_app = typer.Typer()
 

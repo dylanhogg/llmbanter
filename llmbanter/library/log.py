@@ -2,7 +2,7 @@ import sys
 
 from loguru import logger
 
-from llmvsllm.library import env
+from llmbanter.library import env
 
 
 def configure(remove_existing=True, logfile="./log/app.log"):

@@ -1,8 +1,8 @@
 from loguru import logger
 from rich import print
 
-from llmvsllm.bots.bot_base import BotBase
-from llmvsllm.library import llm
+from llmbanter.bots.bot_base import BotBase
+from llmbanter.library import llm
 
 
 class LLMBot(BotBase):

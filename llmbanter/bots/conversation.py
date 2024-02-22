@@ -8,9 +8,9 @@ from omegaconf import DictConfig
 from rich import print
 from rich.console import Console
 
-from llmvsllm.bots.bot_base import BotBase
-from llmvsllm.bots.bot_pair import BotPair
-from llmvsllm.library.sound import Sound
+from llmbanter.bots.bot_base import BotBase
+from llmbanter.bots.bot_pair import BotPair
+from llmbanter.library.sound import Sound
 
 
 class Conversation:

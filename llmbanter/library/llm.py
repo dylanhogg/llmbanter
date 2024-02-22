@@ -4,7 +4,7 @@ from pathlib import Path
 
 from litellm import completion
 
-from llmvsllm.library.classes import LLMResult
+from llmbanter.library.classes import LLMResult
 
 # def log_retry(state):
 #     msg = (
