@@ -9,7 +9,7 @@ from llmbanter.library.classes import AppUsageException
 
 
 class BotBase(ABC):
-    bot_folder = Path("./bots_json")
+    bot_folder = Path("./bots")
 
     def __init__(
         self,
@@ -102,14 +102,14 @@ class BotBase(ABC):
         return cls.get_bot("human")
 
     @classmethod
-    def get_bot(cls, bot_name) -> "BotBase":
+    def get_bot(cls, bot_name: str, bot_folder: str = "./bots") -> "BotBase":
         try:
             if len(bot_name.split("/")) == 2:
                 bot_path = bot_name.split("/")[0]
                 bot_name = bot_name.split("/")[1]
-                file_path = Path("./bots_json") / bot_path / f"{bot_name}.yaml"
+                file_path = Path(bot_folder) / bot_path / f"{bot_name}.yaml"
             elif len(bot_name.split("/")) == 1:
-                file_path = Path("./bots_json") / f"{bot_name}.yaml"
+                file_path = Path(bot_folder) / f"{bot_name}.yaml"
             else:
                 raise AppUsageException(
                     f"Bot name should be in the format 'bot_type/bot_name' e.g. 'evangelist/instagram'. You specified bot name of '{bot_name}'."
