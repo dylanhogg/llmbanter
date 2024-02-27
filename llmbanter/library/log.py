@@ -9,7 +9,7 @@ def configure(remove_existing=True, logfile="./log/app.log"):
     if remove_existing:
         logger.remove()
 
-    stderr_level = env.get("LOG_STDERR_LEVEL", "")
+    stderr_level = env.get("LOG_STDERR_LEVEL", "CRITICAL")
     if stderr_level:
         logger.add(sys.stderr, level=stderr_level)
 
