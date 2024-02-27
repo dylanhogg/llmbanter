@@ -31,8 +31,8 @@ class BotBase(ABC):
         self.voice = voice
         self.debug = debug
 
-        self.temperature = None
-        self.model = None
+        self.temperature = 1.0
+        self.model = ""
         self.conversation = []
         self.total_tokens = 0
         self.total_prompt_tokens = 0
@@ -44,16 +44,16 @@ class BotBase(ABC):
         pass
 
     @abstractmethod
-    def cost_estimate_cents(self):
+    def cost_estimate_cents(self) -> float:
         pass
 
-    def is_human(self):
+    def is_human(self) -> bool:
         return False
 
-    def get_opener(self):
+    def get_opener(self) -> str:
         return self.opener
 
-    def pair_with(self, other: "BotBase") -> "BotBase":
+    def pair_with(self, other: "BotBase"):
         def talking_with_statement(name):
             return "You are talking with " + name.replace("_", " ") + " (only address them by name once, not more)\n"
 
@@ -61,6 +61,9 @@ class BotBase(ABC):
         other.system = talking_with_statement(self.name) + other.system
         self.first_bot = True
         other.first_bot = False
+
+    def augmented_conversation_system(self) -> str:
+        return "Not applicable for this bot type."
 
     @property
     def display_name(self):
@@ -103,6 +106,7 @@ class BotBase(ABC):
 
     @classmethod
     def get_bot(cls, bot_name: str, bot_folder: str = "./bots") -> "BotBase":
+        file_path = None
         try:
             if len(bot_name.split("/")) == 2:
                 bot_path = bot_name.split("/")[0]

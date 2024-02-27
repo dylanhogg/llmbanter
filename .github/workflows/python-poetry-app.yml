@@ -62,6 +62,11 @@ jobs:
           source .venv/bin/activate
           ruff check . --verbose
 
+      - name: Run pyright
+        run: |
+          source .venv/bin/activate
+          pyright --project .
+
       - name: Run tests
         # env:
         #   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

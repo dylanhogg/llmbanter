@@ -15,7 +15,7 @@ class LLMBot(BotBase):
         first_bot: bool = False,
         voice: str = "onyx",
         model: str = "gpt-3.5-turbo",
-        temperature: float = None,
+        temperature: float = 1.0,
         debug: bool = False,
     ):
         super().__init__(version, name, system, opener, first_bot, voice, debug)
@@ -26,7 +26,7 @@ class LLMBot(BotBase):
     def __repr__(self) -> str:
         return f"{type(self).__name__} {self.filename}.yaml '{self.name}' {self.model}@{self.temperature}"
 
-    def augmented_conversation_system(self):
+    def augmented_conversation_system(self) -> str:
         system_messages = [x for x in self.conversation if x["role"] == "system"]
         if len(system_messages) > 1:
             print("WARNING: more than one system message found, using first one.")
@@ -40,22 +40,22 @@ class LLMBot(BotBase):
 
         if user_input == "%system":
             response = self.augmented_conversation_system()
-            return self.i, self.conversation, response, 0, 0
+            return self.i, response
 
         if user_input == "%debug":
             self.debug = not self.debug
             response = "Debug mode is now " + ("on." if self.debug else "off.")
-            return self.i, self.conversation, response, 0, 0
+            return self.i, response
 
-        if user_input == "%full_conversation":
+        if user_input == "%system_conversation":
             #  print(f"{self.conversation=}")
             response = self.conversation
-            return self.i, self.conversation, response, 0, 0
+            return self.i, str(response)
 
         if user_input == "%conversation":
             #  print(f"{self.conversation=}")
-            response = [x for x in self.conversation if x["role"] == "user" or x["role"] == "assistant"]
-            return self.i, self.conversation, response, 0, 0
+            filtered_conversation = [x for x in self.conversation if x["role"] == "user" or x["role"] == "assistant"]
+            return self.i, str(filtered_conversation)
 
         assert len(self.conversation) > 0, "Expected conversation to have been initialized with system role"
         if self.first_bot and self.i == 0:
@@ -82,12 +82,12 @@ class LLMBot(BotBase):
             response_nl,
         )
 
-    def cost_estimate_cents(self):
+    def cost_estimate_cents(self) -> float:
         # https://openai.com/pricing#language-models (as of Nov 2023)
-        def gpt4_8k_price_estimate(prompt_tokens, completion_tokens):
+        def gpt4_8k_price_estimate(prompt_tokens, completion_tokens) -> float:
             return (prompt_tokens / 1000) * 3 + (completion_tokens / 1000) * 6
 
-        def gpt35_4k_price_estimate(prompt_tokens, completion_tokens):
+        def gpt35_4k_price_estimate(prompt_tokens, completion_tokens) -> float:
             return (prompt_tokens / 1000) * 0.1 + (completion_tokens / 1000) * 0.2
 
         if self.model.startswith("gpt-3.5"):
@@ -110,7 +110,7 @@ class HumanInputBot(BotBase):
         multiline: bool = False,
     ):
         system = ""
-        opener = None
+        opener = ""
         super().__init__(version, name, system, opener, first_bot, voice, debug)
 
         self.i = 0
@@ -159,10 +159,10 @@ class HumanInputBot(BotBase):
                     self.i += 1
                     return self.i, response
 
-    def is_human(self):
+    def is_human(self) -> bool:
         return True
 
-    def cost_estimate_cents(self):
+    def cost_estimate_cents(self) -> float:
         return 0
 
 
@@ -183,7 +183,7 @@ class FixedResponseBot(BotBase):
         self.i = 0
         self.temperature = ""
         self.model = ""
-        self.conversation = ["Not applicable, this bot has a fixed response list."]
+        self.conversation = []
         self.response_list = response_list
 
     def __repr__(self) -> str:
@@ -201,5 +201,5 @@ class FixedResponseBot(BotBase):
         self.i += 1
         return self.i, response
 
-    def cost_estimate_cents(self):
+    def cost_estimate_cents(self) -> float:
         return 0

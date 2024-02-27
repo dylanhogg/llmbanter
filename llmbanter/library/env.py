@@ -9,9 +9,10 @@ load_dotenv()
 
 def get(name: str, default: Optional[str] = None) -> str:
     logger.trace(f"env.get called with name '{name}' and default '{default}'")
-    if os.getenv(name) is None and default is None:
-        raise Exception(f"{name} environment variable is not set.")
-    elif os.getenv(name) is None:
+    if os.getenv(name):
+        return os.environ[name]
+
+    if default:
         return default
     else:
-        return os.environ[name]
+        raise Exception(f"{name} environment variable is not set.")

@@ -39,6 +39,7 @@ ruff = "^0.2.0"
 coverage = "^7.4.1"
 pre-commit = "^3.6.0"
 pip-audit = "^2.7.0"
+pyright = "^1.1.351"
 
 [tool.black]
 line-length = 120
@@ -69,3 +70,7 @@ ignore = [
 ]
 fixable = ["ALL"]
 unfixable = []
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"

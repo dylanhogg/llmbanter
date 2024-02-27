@@ -3,6 +3,7 @@ import hashlib
 import os
 import time
 from pathlib import Path
+from typing import Literal
 
 from loguru import logger
 from openai import OpenAI
@@ -18,12 +19,18 @@ class Sound:
     female_voice1 = "female_voice1"
     female_voice2 = "female_voice2"
 
-    _openai_voice_map = {
-        "male_voice1": "onyx",
-        "male_voice2": "echo",
-        "female_voice1": "shimmer",
-        "female_voice2": "nova",
-    }
+    @staticmethod
+    def openai_voice(voice) -> Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"]:
+        if voice == "male_voice1":
+            return "onyx"
+        elif voice == "male_voice2":
+            return "echo"
+        elif voice == "female_voice1":
+            return "shimmer"
+        elif voice == "female_voice2":
+            return "nova"
+        else:
+            raise ValueError(f"voice {voice} is not valid")
 
     @staticmethod
     def _write_tts_mp3(tts_service, voice, text, filepath):
@@ -40,7 +47,7 @@ class Sound:
 
         if tts_service == "openai":
             client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-            response = client.audio.speech.create(model="tts-1", voice=Sound._openai_voice_map[voice], input=text)
+            response = client.audio.speech.create(model="tts-1", voice=Sound.openai_voice(voice), input=text)
             response.stream_to_file(filepath)
             return estimated_cost_cents
 

@@ -3,6 +3,7 @@ import pickle
 from pathlib import Path
 
 from litellm import completion
+from litellm.utils import ModelResponse
 
 from llmbanter.library.classes import LLMResult
 
@@ -22,7 +23,9 @@ from llmbanter.library.classes import LLMResult
 #     before_sleep=log_retry,
 #     retry=retry_if_not_exception_type(AppUsageException),
 # )
-def _get_response_cached(bot_name: str, model: str, temperature: float, messages: list, cache_folder="./.cache/llm"):
+def _get_response_cached(
+    bot_name: str, model: str, temperature: float, messages: list, cache_folder="./.cache/llm"
+) -> tuple[ModelResponse, bool]:
     args = f"{bot_name}-{model}@{temperature}-{messages}"
     args_hash = hashlib.sha256(args.encode()).hexdigest()
     filename_hash = f"{bot_name}_{model}_{temperature}_{args_hash}.pkl"
@@ -44,11 +47,14 @@ def _get_response_cached(bot_name: str, model: str, temperature: float, messages
             temperature=temperature,
             messages=messages,
         )
-        assert api_response.model.startswith(model)
+        assert api_response.model and api_response.model.startswith(model)
         with open(filepath, "wb") as f:
             pickle.dump(api_response, f)
         cache_hit = False
 
+    assert isinstance(
+        api_response, ModelResponse
+    ), f"Expected api_response to be a ModelResponse, not {type(api_response)=}"
     return api_response, cache_hit
 
 
@@ -59,7 +65,7 @@ def get_response(bot_name: str, model: str, temperature: float, messages: list, 
     # TODO: assert messages contain a single {"role": "system"} entry
 
     api_response, cache_hit = _get_response_cached(bot_name, model, temperature, messages)
-    chat_response = api_response.choices[0].message.content
+    chat_response = api_response.choices[0].message.content  # type: ignore
     total_tokens = int(api_response["usage"]["total_tokens"])
     prompt_tokens = int(api_response["usage"]["prompt_tokens"])
     completion_tokens = int(api_response["usage"]["completion_tokens"])
