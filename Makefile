@@ -1,10 +1,10 @@
 run:
 	# Executes the given command inside the virtualenv
-	# poetry run llmvsllm evangelist/java_language human # --no-show-costs # --speak
-	poetry run llmvsllm evangelist/python_language evangelist/java_language # --no-show-costs # --speak
+	# poetry run llmbanter evangelist/java_language human # --no-show-costs # --speak
+	poetry run llmbanter evangelist/python_language evangelist/java_language # --no-show-costs # --speak
 
 cmdhelp:
-	poetry run llmvsllm --help
+	poetry run llmbanter --help
 
 build:
 	# Build the source and wheels archives
@@ -25,7 +25,7 @@ which-python:
 poetry-add-init:
 	# Adds required packages to your pyproject.toml and installs them
 	# TODO: review and add your dependencies as needed
-	poetry add --group dev pytest black ruff coverage pre-commit pip-audit
+	poetry add --group dev pytest black ruff coverage pre-commit pip-audit pyright
 	poetry add python-dotenv click typer rich tqdm loguru
 
 publish-test:
@@ -36,10 +36,10 @@ publish-test:
 test-install-from-pypi:
 	rm -rf venv_install_test
 	python3 -m venv venv_install_test
-	source venv_install_test/bin/activate ; pip install llmvsllm
-	source venv_install_test/bin/activate ; llmvsllm --help
-	source venv_install_test/bin/activate ; llmvsllm --version
-	source venv_install_test/bin/activate ; pip list | grep llmvsllm
+	source venv_install_test/bin/activate ; pip install llmbanter
+	source venv_install_test/bin/activate ; llmbanter --help
+	source venv_install_test/bin/activate ; llmbanter --version
+	source venv_install_test/bin/activate ; pip list | grep llmbanter
 	rm -rf venv_install_test
 
 poetry-config:
@@ -60,10 +60,10 @@ test-selected:
 	poetry run coverage report
 
 black-check:
-	poetry run black llmvsllm tests --check --verbose
+	poetry run black llmbanter tests --check --verbose
 
 black:
-	poetry run black llmvsllm tests
+	poetry run black llmbanter tests
 
 ruff-check:
 	poetry run ruff check .
