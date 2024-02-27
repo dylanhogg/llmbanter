@@ -71,6 +71,11 @@ ruff-check:
 ruff:
 	poetry run ruff check . --fix
 
+pyright:
+	# https://microsoft.github.io/pyright/#/getting-started
+	# https://github.com/RobertCraigie/pyright-python
+	poetry run pyright
+
 pre-commit:
 	poetry run pre-commit run --all-files
 
