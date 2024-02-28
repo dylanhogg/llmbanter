@@ -1,0 +1,8 @@
+version: 1.0
+bot_type: LLMBot
+name: Assistant
+voice: female_voice1
+opener: How can I help you today?
+system: |-
+  You are a helpful assistant.
+  (your responses are less than 30 words)
