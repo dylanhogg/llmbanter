@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+import typer
 from loguru import logger
 from omegaconf import DictConfig
 from rich import print
@@ -59,8 +60,11 @@ class Conversation:
                     break
                 elif pause_input == "%system1":
                     self._pprint(f"Bot 1 system:\n{bots.bot1.augmented_conversation_system()}")
-                elif pause_input == "%system1":
+                elif pause_input == "%system2":
                     self._pprint(f"Bot 2 system:\n{bots.bot2.augmented_conversation_system()}")
+                elif pause_input == "%quit" or pause_input == "%q":
+                    self._pprint("Quitting...")
+                    raise typer.Exit()
                 else:
                     break
 
@@ -89,6 +93,16 @@ class Conversation:
         self._pprint("Conversation set up:")
         self._pprint(f"{bots.bot1=}")
         self._pprint(f"{bots.bot2=}")
+        print()
+        self._pprint("Available commands:")
+        self._pprint("'%human1': Switch bot1 to human input")
+        self._pprint("'%human2': Switch bot2 to human input")
+        self._pprint("'%system1': Show bot1 system setup")
+        self._pprint("'%system2': Show bot2 system setup")
+        self._pprint("'%debug': Debug mode on/off")
+        self._pprint("'%system_conversation': Show system setup and conversation transcript")
+        self._pprint("'%conversation': Show conversation transcript")
+        self._pprint("'%quit' or '%q': Quit conversation")
         print()
 
         total_prompt_tokens = 0
