@@ -11,7 +11,7 @@ from llmbanter.bots.conversation import Conversation
 from llmbanter.library import consts, env, log
 from llmbanter.library.classes import AppUsageException
 
-typer_app = typer.Typer()
+app = typer.Typer()
 
 
 def version_callback(value: bool):
@@ -20,7 +20,7 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
-@typer_app.command()
+@app.command()
 def run(
     bot1: Annotated[str, typer.Argument(help="Name of the first bot")],
     bot2: Annotated[str, typer.Argument(help="Name of the second bot")],
@@ -114,3 +114,9 @@ def run(
         print("")
         print(f"For more information, try '{consts.package_name} --help'.")
         logger.exception(ex)
+
+
+if __name__ == "__main__":
+    # Module entrypoint
+    # e.g. `poetry run python -m llmbanter.console assistant human`
+    app()

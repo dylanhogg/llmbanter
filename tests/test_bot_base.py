@@ -4,18 +4,23 @@ from llmbanter.bots.bot_base import BotBase
 from llmbanter.library.classes import AppUsageException
 
 
+def test_get_bot_system0():
+    bot = BotBase.get_bot("human")
+    print(bot)
+
+
 def test_get_bot_system1():
-    bot = BotBase.get_bot("system/_system_interrogator")
+    bot = BotBase.get_bot("system/interrogator")
     print(bot)
 
 
 def test_get_bot_system2():
-    bot = BotBase.get_bot("system/_system_jailbreaker")
+    bot = BotBase.get_bot("system/jailbreaker")
     print(bot)
 
 
 def test_get_bot_system3():
-    bot = BotBase.get_bot("system/_system_questioner")
+    bot = BotBase.get_bot("system/questioner")
     print(bot)
 
 

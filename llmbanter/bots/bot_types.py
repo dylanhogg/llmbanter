@@ -1,5 +1,4 @@
 from loguru import logger
-from rich import print
 
 from llmbanter.bots.bot_base import BotBase
 from llmbanter.library import llm

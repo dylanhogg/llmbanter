@@ -46,7 +46,7 @@ line-length = 120
 target-version = ['py39']
 
 [tool.poetry.scripts]
-llmbanter = 'llmbanter.console:typer_app'
+llmbanter = 'llmbanter.console:app'
 
 [tool.ruff]
 line-length = 120
