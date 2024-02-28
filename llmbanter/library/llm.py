@@ -24,7 +24,7 @@ from llmbanter.library.classes import LLMResult
 #     retry=retry_if_not_exception_type(AppUsageException),
 # )
 def _get_response_cached(
-    bot_name: str, model: str, temperature: float, messages: list, cache_folder="./.cache/llm"
+    bot_name: str, model: str, temperature: float, messages: list, cache_folder: str = "./.cache/llm"
 ) -> tuple[ModelResponse, bool]:
     args = f"{bot_name}-{model}@{temperature}-{messages}"
     args_hash = hashlib.sha256(args.encode()).hexdigest()

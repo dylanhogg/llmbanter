@@ -34,7 +34,7 @@ class Conversation:
         print(text)
         logger.info(text)
 
-    def _initialise_bots(self):
+    def _initialise_bots(self) -> BotPair:
         return BotPair(self.bot1, self.bot2, self.model1, self.model2, self.temperature1, self.temperature2)
 
     def _parse_pause_input(self, bots: BotPair):
@@ -68,7 +68,7 @@ class Conversation:
                 else:
                     break
 
-    def _get_conversation_details(self, bots) -> tuple[Path, str, str]:
+    def _get_conversation_details(self, bots: BotPair) -> tuple[Path, str, str]:
         transcript_header = f"{bots.bot1.filename} '{bots.bot1.name}' {bots.bot1.model}@{bots.bot1.temperature} <-> {bots.bot2.filename} '{bots.bot2.name}' {bots.bot2.model}@{bots.bot2.temperature}"
         hash = hashlib.md5(transcript_header.encode("utf-8")).hexdigest()[0:7]
         folder = Path("./conversation_transcripts/")

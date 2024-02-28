@@ -5,7 +5,7 @@ from loguru import logger
 from llmbanter.library import env
 
 
-def configure(remove_existing=True, logfile="./log/app.log"):
+def configure(remove_existing: bool = True, logfile: str = "./log/app.log"):
     if remove_existing:
         logger.remove()
 
