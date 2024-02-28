@@ -6,8 +6,9 @@ from pathlib import Path
 import typer
 from loguru import logger
 from omegaconf import DictConfig
-from rich import print
+from rich import print as rprint
 from rich.console import Console
+from rich.text import Text
 
 from llmbanter.bots.bot_base import BotBase
 from llmbanter.bots.bot_pair import BotPair
@@ -31,7 +32,7 @@ class Conversation:
         self.debug = debug
 
     def _pprint(self, text: str):
-        print(text)
+        rprint(text)
         logger.info(text)
 
     def _initialise_bots(self) -> BotPair:
@@ -43,7 +44,7 @@ class Conversation:
                 pause_input = input("...")  # Pause if both bots are non-human
                 # Parse pause input
                 if pause_input == "%human1":
-                    print("Switching bot1 to human...")
+                    rprint("Switching bot1 to human...")
                     human_bot = BotBase.get_human_bot()
                     human_bot.system = bots.bot1.system
                     human_bot.conversation = bots.bot1.conversation
@@ -51,7 +52,7 @@ class Conversation:
                     bots.bot1 = human_bot
                     break
                 elif pause_input == "%human2":
-                    print("Switching bot2 to human...")
+                    rprint("Switching bot2 to human...")
                     human_bot = BotBase.get_human_bot()
                     human_bot.system = bots.bot2.system
                     human_bot.conversation = bots.bot2.conversation
@@ -78,6 +79,25 @@ class Conversation:
             / f"{bots.bot1.filename}#{bots.bot1.model}@{bots.bot1.temperature}___{bots.bot2.filename}#{bots.bot2.model}@{bots.bot2.temperature}_{hash}_{datetime.today().strftime('%Y%m%d.%H%M%S')}.txt"
         )
         return filename, hash, transcript_header
+
+    def _is_python_code(self, text: str) -> bool:
+        import ast
+
+        try:
+            ast.parse(text)
+            return True
+        except SyntaxError:
+            return False
+
+    def _format_response(self, text: str) -> str:
+        from pygments import highlight
+        from pygments.formatters import TerminalFormatter
+        from pygments.lexers import PythonLexer
+
+        if self._is_python_code(text):
+            text_code = highlight(text, PythonLexer(), TerminalFormatter())
+            return Text.from_ansi(text_code)  # Prep for rich text printing
+        return text
 
     def start(self):
         if self.model1.startswith("gpt-4") or self.model2.startswith("gpt-4"):
@@ -134,7 +154,9 @@ class Conversation:
                     ):
                         i, response2 = bots.bot2.respond_to(response1)
 
-                self._pprint(f"[u][white]{bots.bot2.display_name}:[/white][/u] [magenta1]{response2}[/magenta1]")
+                # self._pprint(f"[u][white]{bots.bot2.display_name}:[/white][/u] [magenta1]{response2}[/magenta1]")
+                self._pprint(f"[u][white]{bots.bot2.display_name}:[/white][/u] {self._format_response(response2)}")
+
                 f.write(f"\n{'-'*80}\n{bots.bot2.display_name}: {response2}\n")
                 f.flush()
                 if self.speak and not bots.bot2.is_human():
@@ -172,7 +194,9 @@ class Conversation:
                         f"[u][white]{bots.bot1.display_name}:[/white][/u]", spinner=spinner, spinner_style="cyan2"
                     ):
                         i, response1 = bots.bot1.respond_to(response2)
-                self._pprint(f"[u][white]{bots.bot1.display_name}:[/white][/u] [cyan2]{response1}[/cyan2]")
+
+                # self._pprint(f"[u][white]{bots.bot1.display_name}:[/white][/u] [cyan2]{response1}[/cyan2]")
+                self._pprint(f"[u][white]{bots.bot1.display_name}:[/white][/u] {self._format_response(response1)}")
 
                 f.write(f"\n{'-'*80}\n{bots.bot1.display_name}: {response1}\n")
                 f.flush()
