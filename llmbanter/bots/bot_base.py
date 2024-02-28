@@ -66,11 +66,11 @@ class BotBase(ABC):
         return "Not applicable for this bot type."
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         return self.name
 
     @property
-    def clean_name(self):
+    def clean_name(self) -> str:
         return self.name.lower().strip().replace(" ", "-")
 
     @abstractmethod

@@ -2,6 +2,7 @@ run:
 	# Executes the given command inside the virtualenv
 	# poetry run llmbanter evangelist/java_language human # --no-show-costs # --speak
 	poetry run llmbanter evangelist/python_language evangelist/java_language # --no-show-costs # --speak
+	# poetry run python -m llmbanter.console assistant human
 
 cmdhelp:
 	poetry run llmbanter --help
@@ -51,6 +52,9 @@ poetry-show-tree:
 poetry-gen-requirements:
 	poetry export --output requirements.txt
 
+poetry-lock:
+	poetry lock --no-update
+
 test:
 	poetry run coverage run -m pytest -vvv -s ./tests
 	poetry run coverage report
@@ -81,6 +85,12 @@ pre-commit:
 
 pip-audit:
 	poetry run pip-audit
+
+monkeytype:
+	# https://github.com/instagram/monkeytype
+	poetry run monkeytype list-modules
+	# poetry run monkeytype run llmbanter/console.py assistant human
+	# poetry run monkeytype apply llmbanter.bots.conversation
 
 .DEFAULT_GOAL := help
 .PHONY: help
