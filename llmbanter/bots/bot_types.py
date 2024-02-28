@@ -22,22 +22,19 @@ class LLMBot(BotBase):
         self.i = 0
         self.model = model
         self.temperature = temperature
+        self.conversation = [{"role": "system", "content": self.system}]
 
     def __repr__(self) -> str:
         return f"{type(self).__name__} {self.filename}.yaml '{self.name}' {self.model}@{self.temperature}"
 
     def augmented_conversation_system(self) -> str:
         system_messages = [x for x in self.conversation if x["role"] == "system"]
-        if len(system_messages) > 1:
-            print("WARNING: more than one system message found, using first one.")
+        assert len(system_messages) > 0, "Expected conversation to have been initialized with system message"
+        assert len(system_messages) == 1, "Expected conversation to have a single system message"
         first_system_message = system_messages[0]
         return first_system_message["content"]
 
     def respond_to(self, user_input: str) -> tuple[int, str]:
-        if len(self.conversation) == 0 and self.i == 0:
-            # Include system prompt in start of conversation (delayed until first response call so system can be updated after instantiation)
-            self.conversation = [{"role": "system", "content": self.system}]
-
         if user_input == "%system":
             response = self.augmented_conversation_system()
             return self.i, response
@@ -48,12 +45,10 @@ class LLMBot(BotBase):
             return self.i, response
 
         if user_input == "%system_conversation":
-            #  print(f"{self.conversation=}")
             response = self.conversation
             return self.i, str(response)
 
         if user_input == "%conversation":
-            #  print(f"{self.conversation=}")
             filtered_conversation = [x for x in self.conversation if x["role"] == "user" or x["role"] == "assistant"]
             return self.i, str(filtered_conversation)
 
