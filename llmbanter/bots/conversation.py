@@ -8,10 +8,10 @@ from loguru import logger
 from omegaconf import DictConfig
 from rich import print as rprint
 from rich.console import Console
-from rich.text import Text
 
 from llmbanter.bots.bot_base import BotBase
 from llmbanter.bots.bot_pair import BotPair
+from llmbanter.library.format import RichTerminalFormatter
 from llmbanter.library.sound import Sound
 
 
@@ -80,25 +80,6 @@ class Conversation:
         )
         return filename, hash, transcript_header
 
-    def _is_python_code(self, text: str) -> bool:
-        import ast
-
-        try:
-            ast.parse(text)
-            return True
-        except SyntaxError:
-            return False
-
-    def _format_response(self, text: str) -> str:
-        from pygments import highlight
-        from pygments.formatters import TerminalFormatter
-        from pygments.lexers import PythonLexer
-
-        if self._is_python_code(text):
-            text_code = highlight(text, PythonLexer(), TerminalFormatter())
-            return Text.from_ansi(text_code)  # Prep for rich text printing
-        return text
-
     def start(self):
         if self.model1.startswith("gpt-4") or self.model2.startswith("gpt-4"):
             self._pprint("[red]WARNING: GPT-4 model activated, watch your costs.[/red]")
@@ -154,9 +135,10 @@ class Conversation:
                     ):
                         i, response2 = bots.bot2.respond_to(response1)
 
-                # self._pprint(f"[u][white]{bots.bot2.display_name}:[/white][/u] [magenta1]{response2}[/magenta1]")
-                self._pprint(f"[u][white]{bots.bot2.display_name}:[/white][/u] {self._format_response(response2)}")
-
+                self._pprint(
+                    f"[u][white]{bots.bot2.display_name}:[/white][/u] "
+                    f"{RichTerminalFormatter().format_response(response2, 'magenta1')}"
+                )
                 f.write(f"\n{'-'*80}\n{bots.bot2.display_name}: {response2}\n")
                 f.flush()
                 if self.speak and not bots.bot2.is_human():
@@ -195,9 +177,10 @@ class Conversation:
                     ):
                         i, response1 = bots.bot1.respond_to(response2)
 
-                # self._pprint(f"[u][white]{bots.bot1.display_name}:[/white][/u] [cyan2]{response1}[/cyan2]")
-                self._pprint(f"[u][white]{bots.bot1.display_name}:[/white][/u] {self._format_response(response1)}")
-
+                self._pprint(
+                    f"[u][white]{bots.bot1.display_name}:[/white][/u] "
+                    f"{RichTerminalFormatter().format_response(response1, 'cyan2')}"
+                )
                 f.write(f"\n{'-'*80}\n{bots.bot1.display_name}: {response1}\n")
                 f.flush()
                 if self.speak and not bots.bot1.is_human():
