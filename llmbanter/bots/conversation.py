@@ -1,6 +1,7 @@
 import hashlib
 import os
 from datetime import datetime
+from io import TextIOWrapper
 from pathlib import Path
 
 import typer
@@ -80,15 +81,38 @@ class Conversation:
         )
         return filename, hash, transcript_header
 
+    def _respond_to(self, text_input: str, bot: BotBase, color: str, f: TextIOWrapper) -> tuple[int, str, float, bool]:
+        # Bot responds to text input
+        console = Console()
+        spinner = "layer"
+        if bot.is_human():
+            i, response = bot.respond_to(text_input)
+        else:
+            with console.status(f"[u][white]{bot.display_name}:[/white][/u]", spinner=spinner, spinner_style=color):
+                i, response = bot.respond_to(text_input)
+
+        # Log conversation
+        self._pprint(
+            f"[u][white]{bot.display_name}:[/white][/u] " f"{RichTerminalFormatter().format_response(response, color)}"
+        )
+        f.write(f"\n{'-'*80}\n{bot.display_name}: {response}\n")
+        f.flush()
+
+        # Play mp3
+        mp3_cost_cents = 0.0
+        mp3_from_cache = True
+        if self.speak and not bot.is_human():
+            mp3_file, mp3_cost_cents, mp3_from_cache = Sound.to_mp3(response, bot.voice, bot.clean_name)
+            Sound.play_mp3(mp3_file)
+
+        return i, response, mp3_cost_cents, mp3_from_cache
+
     def start(self):
         if self.model1.startswith("gpt-4") or self.model2.startswith("gpt-4"):
             self._pprint("[red]WARNING: GPT-4 model activated, watch your costs.[/red]")
 
         api_key = os.environ.get("OPENAI_API_KEY", None)
         assert api_key, "OPENAI_API_KEY environment variable must be set"
-
-        console = Console()
-        spinner = "layer"
 
         bots = self._initialise_bots()
         self._pprint("Conversation set up:")
@@ -127,26 +151,8 @@ class Conversation:
             f.write(f"{transcript_header}\n")
             while True:
                 # Bot 2 responds to Bot 1 opener
-                if bots.bot2.is_human():
-                    i, response2 = bots.bot2.respond_to(response1)
-                else:
-                    with console.status(
-                        f"[u][white]{bots.bot2.display_name}:[/white][/u]", spinner=spinner, spinner_style="magenta1"
-                    ):
-                        i, response2 = bots.bot2.respond_to(response1)
-
-                self._pprint(
-                    f"[u][white]{bots.bot2.display_name}:[/white][/u] "
-                    f"{RichTerminalFormatter().format_response(response2, 'magenta1')}"
-                )
-                f.write(f"\n{'-'*80}\n{bots.bot2.display_name}: {response2}\n")
-                f.flush()
-                if self.speak and not bots.bot2.is_human():
-                    mp3_file2, estimated_cost_cents2, mp3_from_cache2 = Sound.to_mp3(
-                        response2, bots.bot2.voice, bots.bot2.clean_name
-                    )
-                    Sound.play_mp3(mp3_file2)
-                    total_mp3_cents += estimated_cost_cents2
+                i, response2, mp3_cost_cents2, mp3_from_cache2 = self._respond_to(response1, bots.bot2, "magenta1", f)
+                total_mp3_cents += mp3_cost_cents2
 
                 # Debug info
                 total_llm_cents = bots.bot1.cost_estimate_cents() + bots.bot2.cost_estimate_cents()
@@ -158,8 +164,8 @@ class Conversation:
 
                     self._pprint(
                         f"[bright_black]({total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}, "
-                        f"{total_mp3_cents=:.1f}, {total_llm_cents=:.2f}, {total_cents=:.2f}) "
-                        f"{'*' if mp3_from_cache2 else ''}{'^' if mp3_from_cache1 else ''}[/bright_black]"
+                        f"{total_mp3_cents=:.1f}, {total_llm_cents=:.2f}, {total_cents=:.2f})"
+                        f"{' c2' if mp3_from_cache2 else ''}{' c1' if mp3_from_cache1 else ''}[/bright_black]"
                     )
 
                 # Pause if both bots are non-human
@@ -169,23 +175,5 @@ class Conversation:
                 self._pprint(f"[white]{i+1}.[/white]")
 
                 # Bot 1 responds to Bot 2
-                if bots.bot1.is_human():
-                    i, response1 = bots.bot1.respond_to(response2)
-                else:
-                    with console.status(
-                        f"[u][white]{bots.bot1.display_name}:[/white][/u]", spinner=spinner, spinner_style="cyan2"
-                    ):
-                        i, response1 = bots.bot1.respond_to(response2)
-
-                self._pprint(
-                    f"[u][white]{bots.bot1.display_name}:[/white][/u] "
-                    f"{RichTerminalFormatter().format_response(response1, 'cyan2')}"
-                )
-                f.write(f"\n{'-'*80}\n{bots.bot1.display_name}: {response1}\n")
-                f.flush()
-                if self.speak and not bots.bot1.is_human():
-                    mp3_file1, estimated_cost_cents1, mp3_from_cache1 = Sound.to_mp3(
-                        response1, bots.bot1.voice, bots.bot1.clean_name
-                    )
-                    Sound.play_mp3(mp3_file1)
-                    total_mp3_cents += estimated_cost_cents1
+                i, response1, mp3_cost_cents1, mp3_from_cache1 = self._respond_to(response2, bots.bot1, "cyan2", f)
+                total_mp3_cents += mp3_cost_cents1
