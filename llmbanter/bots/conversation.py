@@ -39,36 +39,52 @@ class Conversation:
     def _initialise_bots(self) -> BotPair:
         return BotPair(self.bot1, self.bot2, self.model1, self.model2, self.temperature1, self.temperature2)
 
-    def _parse_pause_input(self, bots: BotPair):
-        if not bots.bot1.is_human() and not bots.bot2.is_human():
-            while True:
-                pause_input = input("...")  # Pause if both bots are non-human
-                # Parse pause input
-                if pause_input == "%human1":
-                    rprint("Switching bot1 to human...")
-                    human_bot = BotBase.get_human_bot()
-                    human_bot.system = bots.bot1.system
-                    human_bot.conversation = bots.bot1.conversation
-                    human_bot.first_bot = bots.bot1.first_bot
-                    bots.bot1 = human_bot
-                    break
-                elif pause_input == "%human2":
-                    rprint("Switching bot2 to human...")
-                    human_bot = BotBase.get_human_bot()
-                    human_bot.system = bots.bot2.system
-                    human_bot.conversation = bots.bot2.conversation
-                    human_bot.first_bot = bots.bot2.first_bot
-                    bots.bot2 = human_bot
-                    break
-                elif pause_input == "%system1":
-                    self._pprint(f"Bot 1 system:\n{bots.bot1.augmented_conversation_system()}")
-                elif pause_input == "%system2":
-                    self._pprint(f"Bot 2 system:\n{bots.bot2.augmented_conversation_system()}")
-                elif pause_input == "%quit" or pause_input == "%q":
-                    self._pprint("Quitting...")
-                    raise typer.Exit()
-                else:
-                    break
+    def _process_command(self, command: str, bots: BotPair) -> str:  # noqa: C901
+        command = command.strip()
+        while True:
+            # Parse pause input
+            if command == "%human1":
+                human_bot = BotBase.get_human_bot()
+                human_bot.system = bots.bot1.system
+                human_bot.conversation = bots.bot1.conversation
+                human_bot.first_bot = bots.bot1.first_bot
+                bots.bot1 = human_bot
+                return "Switching bot1 to human..."
+            elif command == "%human2":
+                human_bot = BotBase.get_human_bot()
+                human_bot.system = bots.bot2.system
+                human_bot.conversation = bots.bot2.conversation
+                human_bot.first_bot = bots.bot2.first_bot
+                bots.bot2 = human_bot
+                return "Switching bot2 to human..."
+            elif command == "%system1":
+                return f"Bot 1 system:\n{bots.bot1.system_message()}"
+            elif command == "%system2":
+                return f"Bot 2 system:\n{bots.bot2.system_message()}"
+            elif command == "%conversation1":
+                filtered_conversation = [
+                    x for x in bots.bot1.conversation if x["role"] == "user" or x["role"] == "assistant"
+                ]
+                return str(filtered_conversation)
+            elif command == "%sconversation2":
+                filtered_conversation = [
+                    x for x in bots.bot2.conversation if x["role"] == "user" or x["role"] == "assistant"
+                ]
+                return str(filtered_conversation)
+            elif command == "%debug1":
+                bots.bot1.debug = not bots.bot1.debug
+                return "Debug mode is now " + ("on" if bots.bot1.debug else "off") + " for bot1."
+            elif command == "%debug2":
+                bots.bot1.debug = not bots.bot1.debug
+                return "Debug mode is now " + ("on" if bots.bot2.debug else "off") + " for bot2."
+            elif command == "%quit" or command == "%q":
+                self._pprint("Quitting...")
+                raise typer.Exit()
+            elif command.startswith("%"):
+                return f"Unknown command: {command}"
+            else:
+                # break
+                return ""
 
     def _get_conversation_details(self, bots: BotPair) -> tuple[Path, str, str]:
         transcript_header = f"{bots.bot1.filename} '{bots.bot1.name}' {bots.bot1.model}@{bots.bot1.temperature} <-> {bots.bot2.filename} '{bots.bot2.name}' {bots.bot2.model}@{bots.bot2.temperature}"
@@ -81,7 +97,14 @@ class Conversation:
         )
         return filename, hash, transcript_header
 
-    def _respond_to(self, text_input: str, bot: BotBase, color: str, f: TextIOWrapper) -> tuple[int, str, float, bool]:
+    def _respond_to(self, bot: BotBase, text_input: str, color: str, f: TextIOWrapper) -> tuple[int, str, float, bool]:
+        mp3_cost_cents = 0.0
+        mp3_from_cache = True
+        response = ""
+        i = bot.i
+
+        # TODO: actually need to bring _process_command() back here to redo input for real user response!
+
         # Bot responds to text input
         console = Console()
         spinner = "layer"
@@ -99,8 +122,6 @@ class Conversation:
         f.flush()
 
         # Play mp3
-        mp3_cost_cents = 0.0
-        mp3_from_cache = True
         if self.speak and not bot.is_human():
             mp3_file, mp3_cost_cents, mp3_from_cache = Sound.to_mp3(response, bot.voice, bot.clean_name)
             Sound.play_mp3(mp3_file)
@@ -130,6 +151,8 @@ class Conversation:
         self._pprint("'%quit' or '%q': Quit conversation")
         print()
 
+        # i = 0
+        response2 = ""
         total_prompt_tokens = 0
         total_completion_tokens = 0
         total_chars = 0
@@ -151,8 +174,14 @@ class Conversation:
             f.write(f"{transcript_header}\n")
             while True:
                 # Bot 2 responds to Bot 1 opener
-                i, response2, mp3_cost_cents2, mp3_from_cache2 = self._respond_to(response1, bots.bot2, "magenta1", f)
-                total_mp3_cents += mp3_cost_cents2
+                command_reponse = self._process_command(response1, bots)
+                if command_reponse:
+                    self._pprint(command_reponse)
+                else:
+                    i, response2, mp3_cost_cents2, mp3_from_cache2 = self._respond_to(
+                        bots.bot2, response1, "magenta1", f
+                    )
+                    total_mp3_cents += mp3_cost_cents2
 
                 # Debug info
                 total_llm_cents = bots.bot1.cost_estimate_cents() + bots.bot2.cost_estimate_cents()
@@ -169,11 +198,19 @@ class Conversation:
                     )
 
                 # Pause if both bots are non-human
-                self._parse_pause_input(bots)
+                if not bots.bot1.is_human() and not bots.bot2.is_human():
+                    command = input("...")  # Pause if both bots are non-human
+                    command_response = self._process_command(command, bots)
+                    if command_response:
+                        self._pprint(command_response)
 
                 print()
                 self._pprint(f"[white]{i+1}.[/white]")
 
                 # Bot 1 responds to Bot 2
-                i, response1, mp3_cost_cents1, mp3_from_cache1 = self._respond_to(response2, bots.bot1, "cyan2", f)
-                total_mp3_cents += mp3_cost_cents1
+                command_reponse = self._process_command(response2, bots)
+                if command_reponse:
+                    self._pprint(command_reponse)
+                else:
+                    i, response1, mp3_cost_cents1, mp3_from_cache1 = self._respond_to(bots.bot1, response2, "cyan2", f)
+                    total_mp3_cents += mp3_cost_cents1

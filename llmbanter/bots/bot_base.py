@@ -31,6 +31,7 @@ class BotBase(ABC):
         self.voice = voice
         self.debug = debug
 
+        self.i = 0
         self.temperature = 1.0
         self.model = ""
         self.conversation = []
@@ -62,8 +63,8 @@ class BotBase(ABC):
         self.first_bot = True
         other.first_bot = False
 
-    def augmented_conversation_system(self) -> str:
-        return "Not applicable for this bot type."
+    def system_message(self) -> str:
+        return "Not applicable for this bot type: " + type(self).__name__
 
     @property
     def display_name(self) -> str:

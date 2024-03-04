@@ -18,7 +18,6 @@ class LLMBot(BotBase):
         debug: bool = False,
     ):
         super().__init__(version, name, system, opener, first_bot, voice, debug)
-        self.i = 0
         self.model = model
         self.temperature = temperature
         self.conversation = [{"role": "system", "content": self.system}]
@@ -26,7 +25,7 @@ class LLMBot(BotBase):
     def __repr__(self) -> str:
         return f"{type(self).__name__} {self.filename}.yaml '{self.name}' {self.model}@{self.temperature}"
 
-    def augmented_conversation_system(self) -> str:
+    def system_message(self) -> str:
         system_messages = [x for x in self.conversation if x["role"] == "system"]
         assert len(system_messages) > 0, "Expected conversation to have been initialized with system message"
         assert len(system_messages) == 1, "Expected conversation to have a single system message"
@@ -34,23 +33,6 @@ class LLMBot(BotBase):
         return first_system_message["content"]
 
     def respond_to(self, user_input: str) -> tuple[int, str]:
-        if user_input == "%system":
-            response = self.augmented_conversation_system()
-            return self.i, response
-
-        if user_input == "%debug":
-            self.debug = not self.debug
-            response = "Debug mode is now " + ("on." if self.debug else "off.")
-            return self.i, response
-
-        if user_input == "%system_conversation":
-            response = self.conversation
-            return self.i, str(response)
-
-        if user_input == "%conversation":
-            filtered_conversation = [x for x in self.conversation if x["role"] == "user" or x["role"] == "assistant"]
-            return self.i, str(filtered_conversation)
-
         assert len(self.conversation) > 0, "Expected conversation to have been initialized with system role"
         if self.first_bot and self.i == 0:
             # Include opener in start of conversation (should only apply for the first initiating bot)
