@@ -1,6 +1,6 @@
 run:
 	# Executes the given command inside the virtualenv
-	# poetry run llmbanter evangelist/java_language human # --no-show-costs # --speak
+		# poetry run llmbanter evangelist/java_language human # --no-show-costs # --speak
 	poetry run llmbanter evangelist/python_language evangelist/java_language # --no-show-costs # --speak
 	# poetry run python -m llmbanter.console assistant human
 
@@ -82,6 +82,10 @@ pyright:
 
 pre-commit:
 	poetry run pre-commit run --all-files
+
+pre-commit-install:
+	# One time: Install git hook to run pre-commit automatically on git commit
+	poetry run pre-commit install
 
 pip-audit:
 	poetry run pip-audit
