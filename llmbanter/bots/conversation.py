@@ -151,7 +151,7 @@ class Conversation:
         self._pprint("'%quit' or '%q': Quit conversation")
         print()
 
-        # i = 0
+        i = 0
         response2 = ""
         total_prompt_tokens = 0
         total_completion_tokens = 0
