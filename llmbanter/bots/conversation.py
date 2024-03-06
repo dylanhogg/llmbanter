@@ -4,7 +4,6 @@ from datetime import datetime
 from io import TextIOWrapper
 from pathlib import Path
 
-import typer
 from loguru import logger
 from omegaconf import DictConfig
 from rich import print as rprint
@@ -12,6 +11,7 @@ from rich.console import Console
 
 from llmbanter.bots.bot_base import BotBase
 from llmbanter.bots.bot_pair import BotPair
+from llmbanter.library.commands import Commands
 from llmbanter.library.format import RichTerminalFormatter
 from llmbanter.library.sound import Sound
 
@@ -39,52 +39,28 @@ class Conversation:
     def _initialise_bots(self) -> BotPair:
         return BotPair(self.bot1, self.bot2, self.model1, self.model2, self.temperature1, self.temperature2)
 
-    def _process_command(self, command: str, bots: BotPair) -> str:  # noqa: C901
+    def _is_valid_command(self, command: str) -> bool:
+        command_indicator = "%"
         command = command.strip()
-        while True:
-            # Parse pause input
-            if command == "%human1":
-                human_bot = BotBase.get_human_bot()
-                human_bot.system = bots.bot1.system
-                human_bot.conversation = bots.bot1.conversation
-                human_bot.first_bot = bots.bot1.first_bot
-                bots.bot1 = human_bot
-                return "Switching bot1 to human..."
-            elif command == "%human2":
-                human_bot = BotBase.get_human_bot()
-                human_bot.system = bots.bot2.system
-                human_bot.conversation = bots.bot2.conversation
-                human_bot.first_bot = bots.bot2.first_bot
-                bots.bot2 = human_bot
-                return "Switching bot2 to human..."
-            elif command == "%system1":
-                return f"Bot 1 system:\n{bots.bot1.system_message()}"
-            elif command == "%system2":
-                return f"Bot 2 system:\n{bots.bot2.system_message()}"
-            elif command == "%conversation1":
-                filtered_conversation = [
-                    x for x in bots.bot1.conversation if x["role"] == "user" or x["role"] == "assistant"
-                ]
-                return str(filtered_conversation)
-            elif command == "%sconversation2":
-                filtered_conversation = [
-                    x for x in bots.bot2.conversation if x["role"] == "user" or x["role"] == "assistant"
-                ]
-                return str(filtered_conversation)
-            elif command == "%debug1":
-                bots.bot1.debug = not bots.bot1.debug
-                return "Debug mode is now " + ("on" if bots.bot1.debug else "off") + " for bot1."
-            elif command == "%debug2":
-                bots.bot1.debug = not bots.bot1.debug
-                return "Debug mode is now " + ("on" if bots.bot2.debug else "off") + " for bot2."
-            elif command == "%quit" or command == "%q":
-                self._pprint("Quitting...")
-                raise typer.Exit()
-            elif command.startswith("%"):
-                return f"Unknown command: {command}"
-            else:
-                # break
-                return ""
+        if not command.startswith(command_indicator):
+            return False
+
+        try:
+            getattr(Commands(), command.lstrip(command_indicator))
+            return True
+        except AttributeError:
+            return False
+
+    def _process_command(self, command: str, bots: BotPair) -> str:
+        if not self._is_valid_command(command):
+            return ""
+
+        command_indicator = "%"
+        command = command.strip()
+        found_command = getattr(Commands(), command.lstrip(command_indicator))
+        print(f"XXXX TEMP: Running command: {found_command.__name__=}")
+        command_response = found_command(bots)
+        return command_response
 
     def _get_conversation_details(self, bots: BotPair) -> tuple[Path, str, str]:
         transcript_header = f"{bots.bot1.filename} '{bots.bot1.name}' {bots.bot1.model}@{bots.bot1.temperature} <-> {bots.bot2.filename} '{bots.bot2.name}' {bots.bot2.model}@{bots.bot2.temperature}"
@@ -115,9 +91,11 @@ class Conversation:
                 i, response = bot.respond_to(text_input)
 
         # Log conversation
-        self._pprint(
-            f"[u][white]{bot.display_name}:[/white][/u] " f"{RichTerminalFormatter().format_response(response, color)}"
-        )
+        if not bot.is_human():
+            self._pprint(
+                f"[u][white]{bot.display_name}:[/white][/u] "
+                f"{RichTerminalFormatter().format_response(response, color)}"
+            )
         f.write(f"\n{'-'*80}\n{bot.display_name}: {response}\n")
         f.flush()
 
@@ -140,6 +118,7 @@ class Conversation:
         self._pprint(f"{bots.bot1=}")
         self._pprint(f"{bots.bot2=}")
         print()
+        # TODO: generate this help from commands.py? or at least manually refresh it.
         self._pprint("Available commands:")
         self._pprint("'%human1': Switch bot1 to human input")
         self._pprint("'%human2': Switch bot2 to human input")
@@ -174,9 +153,10 @@ class Conversation:
             f.write(f"{transcript_header}\n")
             while True:
                 # Bot 2 responds to Bot 1 opener
-                command_reponse = self._process_command(response1, bots)
-                if command_reponse:
-                    self._pprint(command_reponse)
+                if self._is_valid_command(response1):
+                    # TODO: fix missing bot response retry
+                    command_response = self._process_command(response1, bots)
+                    self._pprint(command_response)
                 else:
                     i, response2, mp3_cost_cents2, mp3_from_cache2 = self._respond_to(
                         bots.bot2, response1, "magenta1", f
@@ -194,23 +174,27 @@ class Conversation:
                     self._pprint(
                         f"[bright_black]({total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}, "
                         f"{total_mp3_cents=:.1f}, {total_llm_cents=:.2f}, {total_cents=:.2f})"
-                        f"{' c2' if mp3_from_cache2 else ''}{' c1' if mp3_from_cache1 else ''}[/bright_black]"
+                        # f"{' c2' if mp3_from_cache2 else ''}{' c1' if mp3_from_cache1 else ''}[/bright_black]"
                     )
 
                 # Pause if both bots are non-human
                 if not bots.bot1.is_human() and not bots.bot2.is_human():
-                    command = input("...")  # Pause if both bots are non-human
-                    command_response = self._process_command(command, bots)
-                    if command_response:
+                    while True:
+                        user_input = input("...")
+                        valid_command = self._is_valid_command(user_input)
+                        if not valid_command:
+                            break
+                        command_response = self._process_command(user_input, bots)
                         self._pprint(command_response)
 
                 print()
                 self._pprint(f"[white]{i+1}.[/white]")
 
                 # Bot 1 responds to Bot 2
-                command_reponse = self._process_command(response2, bots)
-                if command_reponse:
-                    self._pprint(command_reponse)
+                if self._is_valid_command(response2):
+                    # TODO: fix missing bot response retry
+                    command_response = self._process_command(response2, bots)
+                    self._pprint(command_response)
                 else:
                     i, response1, mp3_cost_cents1, mp3_from_cache1 = self._respond_to(bots.bot1, response2, "cyan2", f)
                     total_mp3_cents += mp3_cost_cents1

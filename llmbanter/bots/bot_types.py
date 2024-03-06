@@ -1,4 +1,5 @@
 from loguru import logger
+from rich import print as rprint
 
 from llmbanter.bots.bot_base import BotBase
 from llmbanter.library import llm
@@ -112,7 +113,8 @@ class HumanInputBot(BotBase):
             return response
         else:
             while True:
-                response = input("You (opener): ").strip()
+                rprint("[u][white]Your message (opener):[/white][/u]", end=" ")
+                response = input("").strip()
                 if response:
                     self.opener = response
                     return response
@@ -130,7 +132,8 @@ class HumanInputBot(BotBase):
             return self.i, response
         else:
             while True:
-                response = input("You: ").strip()
+                rprint("[u][white]Your message:[/white][/u]", end=" ")
+                response = input("").strip()
                 if response:
                     self.i += 1
                     return self.i, response
