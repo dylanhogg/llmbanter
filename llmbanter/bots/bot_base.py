@@ -31,7 +31,6 @@ class BotBase(ABC):
         self.voice = voice
         self.debug = debug
 
-        self.i = 0
         self.temperature = 1.0
         self.model = ""
         self.conversation = []
@@ -41,7 +40,7 @@ class BotBase(ABC):
         self.total_chars = 0
 
     @abstractmethod
-    def respond_to(self, user_input: str) -> tuple[int, str]:
+    def respond_to(self, user_input: str) -> str:
         pass
 
     @abstractmethod

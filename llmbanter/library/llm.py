@@ -4,27 +4,36 @@ from pathlib import Path
 
 from litellm import completion
 from litellm.utils import ModelResponse
+from loguru import logger
+from tenacity import (
+    retry,
+    retry_if_not_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
-from llmbanter.library.classes import LLMResult
-
-# def log_retry(state):
-#     msg = (
-#         f"Tenacity retry {state.fn.__name__}: {state.attempt_number=}, {state.idle_for=}, {state.seconds_since_start=}"
-#     )
-#     if state.attempt_number < 1:
-#         logger.info(msg)
-#     else:
-#         logger.exception(msg)
+from llmbanter.library import consts
+from llmbanter.library.classes import AppUsageException, LLMResult
 
 
-# @retry(
-#     wait=wait_exponential(multiplier=2, min=5, max=600),
-#     stop=stop_after_attempt(3),
-#     before_sleep=log_retry,
-#     retry=retry_if_not_exception_type(AppUsageException),
-# )
+def log_retry(state):
+    msg = (
+        f"Tenacity retry {state.fn.__name__}: {state.attempt_number=}, {state.idle_for=}, {state.seconds_since_start=}"
+    )
+    if state.attempt_number < 1:
+        logger.info(msg)
+    else:
+        logger.exception(msg)
+
+
+@retry(
+    wait=wait_exponential(multiplier=2, min=5, max=600),
+    stop=stop_after_attempt(2),
+    before_sleep=log_retry,
+    retry=retry_if_not_exception_type(AppUsageException),
+)
 def _get_response_cached(
-    bot_name: str, model: str, temperature: float, messages: list, cache_folder: str = "./.cache/llm"
+    bot_name: str, model: str, temperature: float, messages: list, cache_folder: str = consts.default_cache_folder_llm
 ) -> tuple[ModelResponse, bool]:
     args = f"{bot_name}-{model}@{temperature}-{messages}"
     args_hash = hashlib.sha256(args.encode()).hexdigest()

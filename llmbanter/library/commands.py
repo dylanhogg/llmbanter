@@ -42,5 +42,14 @@ class Commands:
         bots.bot1.debug = not bots.bot1.debug
         return "Debug mode is now " + ("on" if bots.bot2.debug else "off") + " for bot2."
 
+    def help(self, bots) -> str:
+        command_indicator = "/"
+        methods = [
+            command_indicator + method
+            for method in dir(Commands)
+            if callable(getattr(Commands, method)) and not method.startswith("_")
+        ]
+        return "List of user commands:\n" + "\n".join(methods)
+
     def quit(self, bots) -> str:
         raise typer.Exit()

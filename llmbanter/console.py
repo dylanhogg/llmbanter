@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Optional
 
 import typer
@@ -36,7 +35,8 @@ def run(
     show_costs: Annotated[bool, typer.Option(help="Show costs during usage")] = True,
     llm_use_localhost: Annotated[
         int, typer.Option(help="LLM use localhost:8081 instead of openai")
-    ] = consts.default_llm_use_localhost,
+    ] = consts.default_llm_use_localhost,  # TODO: review llm_use_localhost option, and litellm
+    verbose: Annotated[bool, typer.Option(help="Verbose mode")] = False,
     version: Annotated[
         Optional[bool],
         typer.Option("--version", help=f"Display {consts.package_name} version", callback=version_callback),
@@ -47,11 +47,15 @@ def run(
     """
     typer_args = locals()
     config = OmegaConf.create(typer_args)
+    example_usage = f"Example usage: [bold green]{consts.package_name} python_language_evangelist java_language_evangelist[/bold green]"
+
+    print(f"[bold green]Welcome to {consts.package_name}![/bold green]")
+    print()
 
     log.configure()
     logger.info(f"Start {consts.package_name}, {config=}")
-    print(f"Start {consts.package_name}, {config=}")
-    example_usage = f"Example usage: [bold green]{consts.package_name} python_language_evangelist java_language_evangelist[/bold green]"
+    if verbose:
+        print(f"Start {consts.package_name}, {config=}")
 
     try:
         expected_typer_args = {
@@ -64,6 +68,7 @@ def run(
             "speak",
             "temperature1",
             "temperature2",
+            "verbose",
             "version",
         }
         assert (
@@ -78,14 +83,8 @@ def run(
                 "\nAlternatively you can use the '--llm_use_localhost 1' argument to use a local LLM server."
             )
 
-        start = datetime.now()
         conversation = Conversation(config=config)
         conversation.start()
-        took = datetime.now() - start
-
-        print("")
-        print(f"[bold green]{consts.package_name} finished, took {took.total_seconds()}s.[/bold green]")
-
         raise typer.Exit(consts.success_code)
 
     except AppUsageException as ex:

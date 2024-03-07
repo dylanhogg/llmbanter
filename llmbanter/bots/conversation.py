@@ -40,7 +40,7 @@ class Conversation:
         return BotPair(self.bot1, self.bot2, self.model1, self.model2, self.temperature1, self.temperature2)
 
     def _is_valid_command(self, command: str) -> bool:
-        command_indicator = "%"
+        command_indicator = "/"
         command = command.strip()
         if not command.startswith(command_indicator):
             return False
@@ -55,10 +55,9 @@ class Conversation:
         if not self._is_valid_command(command):
             return ""
 
-        command_indicator = "%"
+        command_indicator = "/"
         command = command.strip()
         found_command = getattr(Commands(), command.lstrip(command_indicator))
-        print(f"XXXX TEMP: Running command: {found_command.__name__=}")
         command_response = found_command(bots)
         return command_response
 
@@ -73,22 +72,19 @@ class Conversation:
         )
         return filename, hash, transcript_header
 
-    def _respond_to(self, bot: BotBase, text_input: str, color: str, f: TextIOWrapper) -> tuple[int, str, float, bool]:
+    def _respond_to(self, bot: BotBase, text_input: str, color: str, f: TextIOWrapper) -> tuple[str, float, bool]:
         mp3_cost_cents = 0.0
         mp3_from_cache = True
         response = ""
-        i = bot.i
-
-        # TODO: actually need to bring _process_command() back here to redo input for real user response!
 
         # Bot responds to text input
         console = Console()
         spinner = "layer"
         if bot.is_human():
-            i, response = bot.respond_to(text_input)
+            response = bot.respond_to(text_input)
         else:
             with console.status(f"[u][white]{bot.display_name}:[/white][/u]", spinner=spinner, spinner_style=color):
-                i, response = bot.respond_to(text_input)
+                response = bot.respond_to(text_input)
 
         # Log conversation
         if not bot.is_human():
@@ -104,7 +100,18 @@ class Conversation:
             mp3_file, mp3_cost_cents, mp3_from_cache = Sound.to_mp3(response, bot.voice, bot.clean_name)
             Sound.play_mp3(mp3_file)
 
-        return i, response, mp3_cost_cents, mp3_from_cache
+        return response, mp3_cost_cents, mp3_from_cache
+
+    def _pause_input(self, bots: BotPair):
+        while True:
+            rprint("[i][bright_black]press ↵ to continue conversation...[/bright_black][/i]", end=" ")
+            user_input = input("").strip()
+            valid_command = self._is_valid_command(user_input)
+            if valid_command:
+                command_response = self._process_command(user_input, bots)
+                self._pprint(command_response)
+            else:
+                break
 
     def start(self):
         if self.model1.startswith("gpt-4") or self.model2.startswith("gpt-4"):
@@ -118,19 +125,10 @@ class Conversation:
         self._pprint(f"{bots.bot1=}")
         self._pprint(f"{bots.bot2=}")
         print()
-        # TODO: generate this help from commands.py? or at least manually refresh it.
-        self._pprint("Available commands:")
-        self._pprint("'%human1': Switch bot1 to human input")
-        self._pprint("'%human2': Switch bot2 to human input")
-        self._pprint("'%system1': Show bot1 system setup")
-        self._pprint("'%system2': Show bot2 system setup")
-        self._pprint("'%debug': Debug mode on/off")
-        self._pprint("'%system_conversation': Show system setup and conversation transcript")
-        self._pprint("'%conversation': Show conversation transcript")
-        self._pprint("'%quit' or '%q': Quit conversation")
+        self._pprint(Commands().help(bots))  # TODO: include a decription with the command
         print()
 
-        i = 0
+        i = 1
         response2 = ""
         total_prompt_tokens = 0
         total_completion_tokens = 0
@@ -138,9 +136,10 @@ class Conversation:
         total_mp3_cents = 0
 
         # Bot1 opener
+        # TODO: remove this and replace with bot1.respond_to() to get opener
         response1 = bots.bot1.get_opener()
-        self._pprint("Conversation:\n[white]1.[/white]")
-        self._pprint(f"[u][white]{bots.bot1.display_name} (opener):[/white][/u] [cyan2]{response1}[/cyan2]")
+        self._pprint(f"Conversation:\n[bright_black]{i}.[/bright_black]")
+        self._pprint(f"[u][white]{bots.bot1.display_name}:[/white][/u] [cyan2]{response1}[/cyan2]")
         if self.speak and not bots.bot1.is_human():
             mp3_file, total_mp3_cents, mp3_from_cache = Sound.to_mp3(response1, bots.bot1.voice, bots.bot1.clean_name)
             Sound.play_mp3(mp3_file)
@@ -152,16 +151,18 @@ class Conversation:
             f.write(f"Conversation {datetime.today().strftime('%Y-%m-%d %H:%M:%S')} @{hash}\n")
             f.write(f"{transcript_header}\n")
             while True:
+                i += 1
+
                 # Bot 2 responds to Bot 1 opener
-                if self._is_valid_command(response1):
-                    # TODO: fix missing bot response retry
-                    command_response = self._process_command(response1, bots)
-                    self._pprint(command_response)
-                else:
-                    i, response2, mp3_cost_cents2, mp3_from_cache2 = self._respond_to(
-                        bots.bot2, response1, "magenta1", f
-                    )
-                    total_mp3_cents += mp3_cost_cents2
+                while True:
+                    response2, mp3_cost_cents2, mp3_from_cache2 = self._respond_to(bots.bot2, response1, "magenta1", f)
+                    valid_command = self._is_valid_command(response2)
+                    if valid_command:
+                        command_response = self._process_command(response2, bots)
+                        self._pprint(command_response)
+                    else:
+                        total_mp3_cents += mp3_cost_cents2
+                        break
 
                 # Debug info
                 total_llm_cents = bots.bot1.cost_estimate_cents() + bots.bot2.cost_estimate_cents()
@@ -170,31 +171,28 @@ class Conversation:
                     total_prompt_tokens = bots.bot1.total_prompt_tokens + bots.bot2.total_prompt_tokens
                     total_completion_tokens = bots.bot1.total_completion_tokens + bots.bot2.total_completion_tokens
                     total_chars = bots.bot1.total_chars + bots.bot2.total_chars
-
                     self._pprint(
-                        f"[bright_black]({total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}, "
-                        f"{total_mp3_cents=:.1f}, {total_llm_cents=:.2f}, {total_cents=:.2f})"
+                        "[i][bright_black]"
+                        f"{total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}, "
+                        f"{total_mp3_cents=:.1f}, {total_llm_cents=:.2f}, {total_cents=:.2f}"
                         # f"{' c2' if mp3_from_cache2 else ''}{' c1' if mp3_from_cache1 else ''}[/bright_black]"
+                        "[/bright_black][i]"
                     )
 
                 # Pause if both bots are non-human
                 if not bots.bot1.is_human() and not bots.bot2.is_human():
-                    while True:
-                        user_input = input("...")
-                        valid_command = self._is_valid_command(user_input)
-                        if not valid_command:
-                            break
-                        command_response = self._process_command(user_input, bots)
-                        self._pprint(command_response)
+                    self._pause_input(bots)
 
                 print()
-                self._pprint(f"[white]{i+1}.[/white]")
+                self._pprint(f"[bright_black]{i}.[/bright_black]")
 
                 # Bot 1 responds to Bot 2
-                if self._is_valid_command(response2):
-                    # TODO: fix missing bot response retry
-                    command_response = self._process_command(response2, bots)
-                    self._pprint(command_response)
-                else:
-                    i, response1, mp3_cost_cents1, mp3_from_cache1 = self._respond_to(bots.bot1, response2, "cyan2", f)
-                    total_mp3_cents += mp3_cost_cents1
+                while True:
+                    response1, mp3_cost_cents1, mp3_from_cache1 = self._respond_to(bots.bot1, response2, "cyan2", f)
+                    valid_command = self._is_valid_command(response1)
+                    if valid_command:
+                        command_response = self._process_command(response1, bots)
+                        self._pprint(command_response)
+                    else:
+                        total_mp3_cents += mp3_cost_cents1
+                        break
