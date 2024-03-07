@@ -5,6 +5,8 @@ version = pkg_resources.get_distribution(package_name).version
 success_code = 0
 
 default_output_folder = "./_output/"
+default_cache_folder_mp3 = "./.cache/mp3"
+default_cache_folder_llm = "./.cache/llm"
 
 # https://platform.openai.com/docs/api-reference/chat/create
 default_llm_use_localhost = 0

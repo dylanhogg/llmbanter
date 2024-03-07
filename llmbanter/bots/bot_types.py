@@ -1,4 +1,5 @@
 from loguru import logger
+from rich import print as rprint
 
 from llmbanter.bots.bot_base import BotBase
 from llmbanter.library import llm
@@ -18,7 +19,6 @@ class LLMBot(BotBase):
         debug: bool = False,
     ):
         super().__init__(version, name, system, opener, first_bot, voice, debug)
-        self.i = 0
         self.model = model
         self.temperature = temperature
         self.conversation = [{"role": "system", "content": self.system}]
@@ -26,37 +26,20 @@ class LLMBot(BotBase):
     def __repr__(self) -> str:
         return f"{type(self).__name__} {self.filename}.yaml '{self.name}' {self.model}@{self.temperature}"
 
-    def augmented_conversation_system(self) -> str:
+    def system_message(self) -> str:
         system_messages = [x for x in self.conversation if x["role"] == "system"]
         assert len(system_messages) > 0, "Expected conversation to have been initialized with system message"
         assert len(system_messages) == 1, "Expected conversation to have a single system message"
         first_system_message = system_messages[0]
         return first_system_message["content"]
 
-    def respond_to(self, user_input: str) -> tuple[int, str]:
-        if user_input == "%system":
-            response = self.augmented_conversation_system()
-            return self.i, response
-
-        if user_input == "%debug":
-            self.debug = not self.debug
-            response = "Debug mode is now " + ("on." if self.debug else "off.")
-            return self.i, response
-
-        if user_input == "%system_conversation":
-            response = self.conversation
-            return self.i, str(response)
-
-        if user_input == "%conversation":
-            filtered_conversation = [x for x in self.conversation if x["role"] == "user" or x["role"] == "assistant"]
-            return self.i, str(filtered_conversation)
-
+    def respond_to(self, user_input: str) -> str:
         assert len(self.conversation) > 0, "Expected conversation to have been initialized with system role"
-        if self.first_bot and self.i == 0:
+        if self.first_bot and len(self.conversation) == 1:
             # Include opener in start of conversation (should only apply for the first initiating bot)
             assert (
                 self.opener
-            ), f"first_bot was True but no opener provided for bot {self.name}. {self.i=}, {self.first_bot=}, {self.opener=}"
+            ), f"first_bot was True but no opener provided for bot {self.name}. {len(self.conversation)=}, {self.first_bot=}, {self.opener=}"
             self.conversation.append({"role": "assistant", "content": self.opener})
 
         self.conversation.append({"role": "user", "content": user_input})
@@ -68,13 +51,9 @@ class LLMBot(BotBase):
         self.total_completion_tokens += llm_result.completion_tokens
         self.total_tokens += llm_result.total_tokens
         self.total_chars += len(llm_result.chat_response)
-        self.i += 1
 
         response_nl = llm_result.chat_response.replace("\\n", "\n")
-        return (
-            self.i,
-            response_nl,
-        )
+        return response_nl
 
     def cost_estimate_cents(self) -> float:
         # https://openai.com/pricing#language-models (as of Nov 2023)
@@ -130,12 +109,13 @@ class HumanInputBot(BotBase):
             return response
         else:
             while True:
-                response = input("You (opener): ").strip()
+                rprint("[u][white]Your message (opener):[/white][/u]", end=" ")
+                response = input("").strip()
                 if response:
                     self.opener = response
                     return response
 
-    def respond_to(self, user_input: str) -> tuple[int, str]:
+    def respond_to(self, user_input: str) -> str:
         if self.multiline:
             lines = []
             try:
@@ -144,14 +124,13 @@ class HumanInputBot(BotBase):
             except EOFError:
                 pass
             response = "\n".join(lines)
-            self.i += 1
-            return self.i, response
+            return response
         else:
             while True:
-                response = input("You: ").strip()
+                rprint("[u][white]Your message:[/white][/u]", end=" ")
+                response = input("").strip()
                 if response:
-                    self.i += 1
-                    return self.i, response
+                    return response
 
     def is_human(self) -> bool:
         return True
@@ -183,7 +162,7 @@ class FixedResponseBot(BotBase):
     def __repr__(self) -> str:
         return f"{type(self).__name__} '{self.name}'"
 
-    def respond_to(self, user_input: str) -> tuple[int, str]:
+    def respond_to(self, user_input: str) -> str:
         if self.first_bot and self.i == 0:
             # Include opener in start of conversation (should only apply for the first initiating bot)
             assert (
@@ -192,8 +171,7 @@ class FixedResponseBot(BotBase):
             self.conversation.append({"role": "assistant", "content": self.opener})
 
         response = self.response_list[self.i % len(self.response_list)]
-        self.i += 1
-        return self.i, response
+        return response
 
     def cost_estimate_cents(self) -> float:
         return 0

@@ -40,7 +40,7 @@ class BotBase(ABC):
         self.total_chars = 0
 
     @abstractmethod
-    def respond_to(self, user_input: str) -> tuple[int, str]:
+    def respond_to(self, user_input: str) -> str:
         pass
 
     @abstractmethod
@@ -62,8 +62,8 @@ class BotBase(ABC):
         self.first_bot = True
         other.first_bot = False
 
-    def augmented_conversation_system(self) -> str:
-        return "Not applicable for this bot type."
+    def system_message(self) -> str:
+        return "Not applicable for this bot type: " + type(self).__name__
 
     @property
     def display_name(self) -> str:
