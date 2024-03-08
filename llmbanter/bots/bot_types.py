@@ -170,6 +170,7 @@ class FixedResponseBot(BotBase):
             ), f"first_bot was True but no opener provided for bot {self.name}. {self.i=}, {self.first_bot=}, {self.opener=}"
             self.conversation.append({"role": "assistant", "content": self.opener})
 
+        self.i += 1
         response = self.response_list[self.i % len(self.response_list)]
         return response
 
