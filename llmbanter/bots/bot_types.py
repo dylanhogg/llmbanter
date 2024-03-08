@@ -3,6 +3,7 @@ from rich import print as rprint
 
 from llmbanter.bots.bot_base import BotBase
 from llmbanter.library import llm
+from llmbanter.library.classes import Response
 
 
 class LLMBot(BotBase):
@@ -33,7 +34,7 @@ class LLMBot(BotBase):
         first_system_message = system_messages[0]
         return first_system_message["content"]
 
-    def respond_to(self, user_input: str) -> str:
+    def respond_to(self, user_input: str) -> Response:
         assert len(self.conversation) > 0, "Expected conversation to have been initialized with system role"
         if self.first_bot and len(self.conversation) == 1:
             # Include opener in start of conversation (should only apply for the first initiating bot)
@@ -44,16 +45,18 @@ class LLMBot(BotBase):
 
         self.conversation.append({"role": "user", "content": user_input})
 
-        llm_result = llm.get_response(self.clean_name, self.model, self.temperature, self.conversation, self.debug)
-        self.conversation.append({"role": "assistant", "content": llm_result.chat_response})
+        response = llm.get_response(self.clean_name, self.model, self.temperature, self.conversation, self.debug)
+        self.conversation.append({"role": "assistant", "content": response.chat_response})
         # TODO: adjust tokens by cache_hit value!
-        self.total_prompt_tokens += llm_result.prompt_tokens
-        self.total_completion_tokens += llm_result.completion_tokens
-        self.total_tokens += llm_result.total_tokens
-        self.total_chars += len(llm_result.chat_response)
+        self.total_prompt_tokens += response.prompt_tokens
+        self.total_completion_tokens += response.completion_tokens
+        self.total_tokens += response.total_tokens
+        self.total_chars += len(response.chat_response)
 
-        response_nl = llm_result.chat_response.replace("\\n", "\n")
-        return response_nl
+        response.chat_response = response.chat_response.replace(
+            "\\n", "\n"
+        )  # TODO: do this in BotResponse class perhaps?
+        return response
 
     def cost_estimate_cents(self) -> float:
         # https://openai.com/pricing#language-models (as of Nov 2023)
@@ -92,7 +95,7 @@ class HumanInputBot(BotBase):
     def __repr__(self) -> str:
         return f"{type(self).__name__} '{self.name}'"
 
-    def get_opener(self):
+    def get_opener(self) -> Response:
         assert (
             self.first_bot and self.i == 0
         ), "get_opener() should only be called for first bot at start of conversation."
@@ -106,16 +109,16 @@ class HumanInputBot(BotBase):
                 pass
             response = "\n".join(lines)
             self.opener = response
-            return response
+            return Response(response)
         else:
             while True:
                 rprint("[u][white]Your message (opener):[/white][/u]", end=" ")
                 response = input("").strip()
                 if response:
                     self.opener = response
-                    return response
+                    return Response(response)
 
-    def respond_to(self, user_input: str) -> str:
+    def respond_to(self, user_input: str) -> Response:
         if self.multiline:
             lines = []
             try:
@@ -124,13 +127,13 @@ class HumanInputBot(BotBase):
             except EOFError:
                 pass
             response = "\n".join(lines)
-            return response
+            return Response(response)
         else:
             while True:
                 rprint("[u][white]Your message:[/white][/u]", end=" ")
                 response = input("").strip()
                 if response:
-                    return response
+                    return Response(response)
 
     def is_human(self) -> bool:
         return True
@@ -162,7 +165,7 @@ class FixedResponseBot(BotBase):
     def __repr__(self) -> str:
         return f"{type(self).__name__} '{self.name}'"
 
-    def respond_to(self, user_input: str) -> str:
+    def respond_to(self, user_input: str) -> Response:
         if self.first_bot and self.i == 0:
             # Include opener in start of conversation (should only apply for the first initiating bot)
             assert (
@@ -172,7 +175,7 @@ class FixedResponseBot(BotBase):
 
         self.i += 1
         response = self.response_list[self.i % len(self.response_list)]
-        return response
+        return Response(response)
 
     def cost_estimate_cents(self) -> float:
         return 0

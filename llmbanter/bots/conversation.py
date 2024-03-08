@@ -11,6 +11,7 @@ from rich.console import Console
 
 from llmbanter.bots.bot_base import BotBase
 from llmbanter.bots.bot_pair import BotPair
+from llmbanter.library.classes import Response
 from llmbanter.library.commands import Commands
 from llmbanter.library.format import RichTerminalFormatter
 from llmbanter.library.sound import Sound
@@ -39,9 +40,9 @@ class Conversation:
     def _initialise_bots(self) -> BotPair:
         return BotPair(self.bot1, self.bot2, self.model1, self.model2, self.temperature1, self.temperature2)
 
-    def _is_valid_command(self, command: str) -> bool:
+    def _is_valid_command(self, response: str) -> bool:
         command_indicator = "/"
-        command = command.strip()
+        command = response.strip()
         if not command.startswith(command_indicator):
             return False
 
@@ -51,12 +52,12 @@ class Conversation:
         except AttributeError:
             return False
 
-    def _process_command(self, command: str, bots: BotPair) -> str:
-        if not self._is_valid_command(command):
+    def _process_command(self, response: str, bots: BotPair) -> str:
+        if not self._is_valid_command(response):
             return ""
 
         command_indicator = "/"
-        command = command.strip()
+        command = response.strip()
         found_command = getattr(Commands(), command.lstrip(command_indicator))
         command_response = found_command(bots)
         return command_response
@@ -72,7 +73,9 @@ class Conversation:
         )
         return filename, hash, transcript_header
 
-    def _respond_to(self, bot: BotBase, text_input: str, color: str, f: TextIOWrapper) -> tuple[str, float, bool]:
+    def _respond_to(
+        self, bot: BotBase, other_response: Response, color: str, f: TextIOWrapper
+    ) -> tuple[Response, float, bool]:
         mp3_cost_cents = 0.0
         mp3_from_cache = True
         response = ""
@@ -81,23 +84,23 @@ class Conversation:
         console = Console()
         spinner = "layer"
         if bot.is_human():
-            response = bot.respond_to(text_input)
+            response = bot.respond_to(other_response.chat_response)
         else:
             with console.status(f"[u][white]{bot.display_name}:[/white][/u]", spinner=spinner, spinner_style=color):
-                response = bot.respond_to(text_input)
+                response = bot.respond_to(other_response.chat_response)
 
         # Log conversation
         if not bot.is_human():
             self._pprint(
                 f"[u][white]{bot.display_name}:[/white][/u] "
-                f"{RichTerminalFormatter().format_response(response, color)}"
+                f"{RichTerminalFormatter().format_response(response.chat_response, color)}"
             )
-        f.write(f"\n{'-'*80}\n{bot.display_name}: {response}\n")
+        f.write(f"\n{'-'*80}\n{bot.display_name}: {response.chat_response}\n")
         f.flush()
 
         # Play mp3
         if self.speak and not bot.is_human():
-            mp3_file, mp3_cost_cents, mp3_from_cache = Sound.to_mp3(response, bot.voice, bot.clean_name)
+            mp3_file, mp3_cost_cents, mp3_from_cache = Sound.to_mp3(response.chat_response, bot.voice, bot.clean_name)
             Sound.play_mp3(mp3_file)
 
         return response, mp3_cost_cents, mp3_from_cache
@@ -139,9 +142,11 @@ class Conversation:
         # TODO: remove this and replace with bot1.respond_to() to get opener
         response1 = bots.bot1.get_opener()
         self._pprint(f"Conversation:\n[bright_black]{i}.[/bright_black]")
-        self._pprint(f"[u][white]{bots.bot1.display_name}:[/white][/u] [cyan2]{response1}[/cyan2]")
+        self._pprint(f"[u][white]{bots.bot1.display_name}:[/white][/u] [cyan2]{response1.chat_response}[/cyan2]")
         if self.speak and not bots.bot1.is_human():
-            mp3_file, total_mp3_cents, mp3_from_cache = Sound.to_mp3(response1, bots.bot1.voice, bots.bot1.clean_name)
+            mp3_file, total_mp3_cents, mp3_from_cache = Sound.to_mp3(
+                response1.chat_response, bots.bot1.voice, bots.bot1.clean_name
+            )
             Sound.play_mp3(mp3_file)
 
         # Start conversation
@@ -156,9 +161,9 @@ class Conversation:
                 # Bot 2 responds to Bot 1 opener
                 while True:
                     response2, mp3_cost_cents2, mp3_from_cache2 = self._respond_to(bots.bot2, response1, "magenta1", f)
-                    valid_command = self._is_valid_command(response2)
+                    valid_command = self._is_valid_command(response2.chat_response)
                     if valid_command:
-                        command_response = self._process_command(response2, bots)
+                        command_response = self._process_command(response2.chat_response, bots)
                         self._pprint(command_response)
                     else:
                         total_mp3_cents += mp3_cost_cents2
@@ -189,9 +194,9 @@ class Conversation:
                 # Bot 1 responds to Bot 2
                 while True:
                     response1, mp3_cost_cents1, mp3_from_cache1 = self._respond_to(bots.bot1, response2, "cyan2", f)
-                    valid_command = self._is_valid_command(response1)
+                    valid_command = self._is_valid_command(response1.chat_response)
                     if valid_command:
-                        command_response = self._process_command(response1, bots)
+                        command_response = self._process_command(response1.chat_response, bots)
                         self._pprint(command_response)
                     else:
                         total_mp3_cents += mp3_cost_cents1

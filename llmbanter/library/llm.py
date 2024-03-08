@@ -13,7 +13,7 @@ from tenacity import (
 )
 
 from llmbanter.library import consts
-from llmbanter.library.classes import AppUsageException, LLMResult
+from llmbanter.library.classes import AppUsageException, Response
 
 
 def log_retry(state):
@@ -67,7 +67,7 @@ def _get_response_cached(
     return api_response, cache_hit
 
 
-def get_response(bot_name: str, model: str, temperature: float, messages: list, debug: bool = False) -> LLMResult:
+def get_response(bot_name: str, model: str, temperature: float, messages: list, debug: bool = False) -> Response:
     assert model is not None, f"Expected value for: {model=}"
     assert temperature is not None, f"Expected value for: {temperature=}"
     assert len(messages) > 0, f"Expected value for: {messages=}"
@@ -79,4 +79,4 @@ def get_response(bot_name: str, model: str, temperature: float, messages: list, 
     prompt_tokens = int(api_response["usage"]["prompt_tokens"])
     completion_tokens = int(api_response["usage"]["completion_tokens"])
 
-    return LLMResult(chat_response, total_tokens, prompt_tokens, completion_tokens, cache_hit)
+    return Response(chat_response, total_tokens, prompt_tokens, completion_tokens, cache_hit)

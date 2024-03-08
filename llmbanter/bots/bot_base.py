@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 
-from llmbanter.library.classes import AppUsageException
+from llmbanter.library.classes import AppUsageException, Response
 
 
 class BotBase(ABC):
@@ -40,7 +40,7 @@ class BotBase(ABC):
         self.total_chars = 0
 
     @abstractmethod
-    def respond_to(self, user_input: str) -> str:
+    def respond_to(self, user_input: str) -> Response:
         pass
 
     @abstractmethod
@@ -50,8 +50,8 @@ class BotBase(ABC):
     def is_human(self) -> bool:
         return False
 
-    def get_opener(self) -> str:
-        return self.opener
+    def get_opener(self) -> Response:
+        return Response(self.opener)
 
     def pair_with(self, other: "BotBase"):
         def talking_with_statement(name):

@@ -60,11 +60,11 @@ class Sound:
     # TODO: Consider integrating with https://github.com/Vaibhavs10/insanely-fast-whisper
     @staticmethod
     def to_mp3(
-        text,
-        voice,
-        bot_name,
-        tts_service="openai",
-        delay_on_cache_hit=0.3,
+        text: str,
+        voice: str,
+        bot_name: str,
+        tts_service: str = "openai",
+        delay_on_cache_hit: float = 0.3,
         cache_folder: str = consts.default_cache_folder_mp3,
     ) -> tuple[Path, float, bool]:
         def get_valid_filename(s):
