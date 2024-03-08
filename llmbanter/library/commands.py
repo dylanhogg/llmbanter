@@ -1,9 +1,50 @@
 import typer
 
 from llmbanter.bots.bot_base import BotBase
+from llmbanter.bots.bot_pair import BotPair
 
 
 class Commands:
+    command_indicator = "/"
+
+    @classmethod
+    def is_command_(cls, response: str) -> bool:
+        command = response.strip()
+        return command.startswith(cls.command_indicator)
+
+    @classmethod
+    def _get_commands(cls) -> list[str]:
+        methods = [
+            method
+            for method in dir(Commands)
+            if callable(getattr(Commands, method)) and not method.startswith("_") and not method.endswith("_")
+        ]
+        return methods
+
+    @classmethod
+    def _is_valid_command(cls, input_command: str) -> bool:
+        if not input_command.strip().startswith(cls.command_indicator):
+            return False
+
+        command = input_command.strip().lstrip(cls.command_indicator)
+        commands = cls._get_commands()
+        print(commands)
+        print(command)
+        return command in commands
+
+    @classmethod
+    def process_command_(cls, response: str, bots: BotPair) -> str:
+        if not cls.is_command_(response):
+            return ""
+
+        if not cls._is_valid_command(response):
+            return f"Unknown command: {response}"
+
+        command = response.strip()
+        found_command = getattr(Commands(), command.lstrip(cls.command_indicator))
+        command_response = found_command(bots)
+        return command_response
+
     def human1(self, bots) -> str:
         human_bot = BotBase.get_human_bot()
         human_bot.system = bots.bot1.system
@@ -43,13 +84,8 @@ class Commands:
         return "Debug mode is now " + ("on" if bots.bot2.debug else "off") + " for bot2."
 
     def help(self, bots) -> str:
-        command_indicator = "/"
-        methods = [
-            command_indicator + method
-            for method in dir(Commands)
-            if callable(getattr(Commands, method)) and not method.startswith("_")
-        ]
-        return "List of user commands:\n" + "\n".join(methods)
+        methods = [self.command_indicator + command for command in Commands._get_commands()]
+        return "List of user commands:\n" + "\n".join(sorted(methods))
 
     def quit(self, bots) -> str:
         raise typer.Exit()

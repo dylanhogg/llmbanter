@@ -40,28 +40,6 @@ class Conversation:
     def _initialise_bots(self) -> BotPair:
         return BotPair(self.bot1, self.bot2, self.model1, self.model2, self.temperature1, self.temperature2)
 
-    def _is_valid_command(self, response: str) -> bool:
-        command_indicator = "/"
-        command = response.strip()
-        if not command.startswith(command_indicator):
-            return False
-
-        try:
-            getattr(Commands(), command.lstrip(command_indicator))
-            return True
-        except AttributeError:
-            return False
-
-    def _process_command(self, response: str, bots: BotPair) -> str:
-        if not self._is_valid_command(response):
-            return ""
-
-        command_indicator = "/"
-        command = response.strip()
-        found_command = getattr(Commands(), command.lstrip(command_indicator))
-        command_response = found_command(bots)
-        return command_response
-
     def _get_conversation_details(self, bots: BotPair) -> tuple[Path, str, str]:
         transcript_header = f"{bots.bot1.filename} '{bots.bot1.name}' {bots.bot1.model}@{bots.bot1.temperature} <-> {bots.bot2.filename} '{bots.bot2.name}' {bots.bot2.model}@{bots.bot2.temperature}"
         hash = hashlib.md5(transcript_header.encode("utf-8")).hexdigest()[0:7]
@@ -109,9 +87,8 @@ class Conversation:
         while True:
             rprint("[i][bright_black]press ↵ to continue conversation...[/bright_black][/i]", end=" ")
             user_input = input("").strip()
-            valid_command = self._is_valid_command(user_input)
-            if valid_command:
-                command_response = self._process_command(user_input, bots)
+            if Commands.is_command_(user_input):
+                command_response = Commands.process_command_(user_input, bots)
                 self._pprint(command_response)
             else:
                 break
@@ -161,9 +138,8 @@ class Conversation:
                 # Bot 2 responds to Bot 1 opener
                 while True:
                     response2, mp3_cost_cents2, mp3_from_cache2 = self._respond_to(bots.bot2, response1, "magenta1", f)
-                    valid_command = self._is_valid_command(response2.chat_response)
-                    if valid_command:
-                        command_response = self._process_command(response2.chat_response, bots)
+                    if Commands.is_command_(response2.chat_response):
+                        command_response = Commands.process_command_(response2.chat_response, bots)
                         self._pprint(command_response)
                     else:
                         total_mp3_cents += mp3_cost_cents2
@@ -194,9 +170,8 @@ class Conversation:
                 # Bot 1 responds to Bot 2
                 while True:
                     response1, mp3_cost_cents1, mp3_from_cache1 = self._respond_to(bots.bot1, response2, "cyan2", f)
-                    valid_command = self._is_valid_command(response1.chat_response)
-                    if valid_command:
-                        command_response = self._process_command(response1.chat_response, bots)
+                    if Commands.is_command_(response1.chat_response):
+                        command_response = Commands.process_command_(response1.chat_response, bots)
                         self._pprint(command_response)
                     else:
                         total_mp3_cents += mp3_cost_cents1
