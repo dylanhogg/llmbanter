@@ -8,29 +8,28 @@ class Commands:
     command_indicator = "/"
 
     @classmethod
-    def is_command_(cls, response: str) -> bool:
-        command = response.strip()
-        return command.startswith(cls.command_indicator)
-
-    @classmethod
     def _get_commands(cls) -> list[str]:
         methods = [
             method
             for method in dir(Commands)
+            # NOTE: ignore methods starting with _ and ending with _
             if callable(getattr(Commands, method)) and not method.startswith("_") and not method.endswith("_")
         ]
         return methods
 
     @classmethod
     def _is_valid_command(cls, input_command: str) -> bool:
-        if not input_command.strip().startswith(cls.command_indicator):
+        if not cls.is_command_(input_command):
             return False
 
         command = input_command.strip().lstrip(cls.command_indicator)
         commands = cls._get_commands()
-        print(commands)
-        print(command)
         return command in commands
+
+    @classmethod
+    def is_command_(cls, response: str) -> bool:
+        command = response.strip()
+        return command.startswith(cls.command_indicator)
 
     @classmethod
     def process_command_(cls, response: str, bots: BotPair) -> str:
