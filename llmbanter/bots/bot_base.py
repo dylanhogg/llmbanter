@@ -55,7 +55,8 @@ class BotBase(ABC):
 
     def pair_with(self, other: "BotBase"):
         def talking_with_statement(name):
-            return "You are talking with " + name.replace("_", " ") + " (only address them by name once, not more)\n"
+            # return "You are talking with " + name.replace("_", " ") + " (only address them by name once, not more)\n"
+            return "You are talking with " + name.replace("_", " ") + "\n"
 
         self.system = talking_with_statement(other.name) + self.system
         other.system = talking_with_statement(self.name) + other.system

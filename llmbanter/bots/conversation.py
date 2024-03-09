@@ -1,7 +1,7 @@
 import hashlib
+import json
 import os
 from datetime import datetime
-from io import TextIOWrapper
 from pathlib import Path
 
 from loguru import logger
@@ -11,6 +11,7 @@ from rich.console import Console
 
 from llmbanter.bots.bot_base import BotBase
 from llmbanter.bots.bot_pair import BotPair
+from llmbanter.library import consts
 from llmbanter.library.classes import Response
 from llmbanter.library.commands import Commands
 from llmbanter.library.format import RichTerminalFormatter
@@ -43,17 +44,15 @@ class Conversation:
     def _get_conversation_details(self, bots: BotPair) -> tuple[Path, str, str]:
         transcript_header = f"{bots.bot1.filename} '{bots.bot1.name}' {bots.bot1.model}@{bots.bot1.temperature} <-> {bots.bot2.filename} '{bots.bot2.name}' {bots.bot2.model}@{bots.bot2.temperature}"
         hash = hashlib.md5(transcript_header.encode("utf-8")).hexdigest()[0:7]
-        folder = Path("./conversation_transcripts/")
+        folder = Path(f"./{consts.package_name}_conversations/")
         folder.mkdir(parents=True, exist_ok=True)
         filename = (
-            folder
-            / f"{bots.bot1.filename}#{bots.bot1.model}@{bots.bot1.temperature}___{bots.bot2.filename}#{bots.bot2.model}@{bots.bot2.temperature}_{hash}_{datetime.today().strftime('%Y%m%d.%H%M%S')}.txt"
+            folder / f"{bots.bot1.filename}#{bots.bot1.model}@{bots.bot1.temperature}___"
+            f"{bots.bot2.filename}#{bots.bot2.model}@{bots.bot2.temperature}_{hash}_{datetime.today().strftime('%Y%m%d.%H%M%S')}.txt"
         )
         return filename, hash, transcript_header
 
-    def _respond_to(
-        self, bot: BotBase, other_response: Response, color: str, f: TextIOWrapper
-    ) -> tuple[Response, float, bool]:
+    def _respond_to(self, bot: BotBase, other_response: Response, color: str) -> tuple[Response, float, bool]:
         mp3_cost_cents = 0.0
         mp3_from_cache = True
         response = ""
@@ -73,8 +72,6 @@ class Conversation:
                 f"[u][white]{bot.display_name}:[/white][/u] "
                 f"{RichTerminalFormatter().format_response(response.chat_response, color)}"
             )
-        f.write(f"\n{'-'*80}\n{bot.display_name}: {response.chat_response}\n")
-        f.flush()
 
         # Play mp3
         if self.speak and not bot.is_human():
@@ -93,6 +90,11 @@ class Conversation:
             else:
                 break
 
+    def _log_conversation(self, bots: BotPair, filename: Path):
+        with open(filename, "w") as f:
+            j = json.dumps(bots, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+            f.write(j)
+
     def start(self):
         if self.model1.startswith("gpt-4") or self.model2.startswith("gpt-4"):
             self._pprint("[red]WARNING: GPT-4 model activated, watch your costs.[/red]")
@@ -105,7 +107,7 @@ class Conversation:
         self._pprint(f"{bots.bot1=}")
         self._pprint(f"{bots.bot2=}")
         print()
-        self._pprint(Commands().help(bots))  # TODO: include a decription with the command
+        self._pprint(Commands().help(bots))  # TODO: include a decription with each command
         print()
 
         i = 1
@@ -129,50 +131,51 @@ class Conversation:
         # Start conversation
         mp3_from_cache1, mp3_from_cache2 = False, False
         filename, hash, transcript_header = self._get_conversation_details(bots)
-        with open(filename, "w") as f:
-            f.write(f"Conversation {datetime.today().strftime('%Y-%m-%d %H:%M:%S')} @{hash}\n")
-            f.write(f"{transcript_header}\n")
+        while True:
+            i += 1
+
+            # Bot 2 responds to Bot 1 opener
             while True:
-                i += 1
+                response2, mp3_cost_cents2, mp3_from_cache2 = self._respond_to(bots.bot2, response1, "magenta1")
+                if Commands.is_command_(response2.chat_response):
+                    command_response = Commands.process_command_(response2.chat_response, bots)
+                    self._pprint(command_response)
+                else:
+                    total_mp3_cents += mp3_cost_cents2
+                    break
 
-                # Bot 2 responds to Bot 1 opener
-                while True:
-                    response2, mp3_cost_cents2, mp3_from_cache2 = self._respond_to(bots.bot2, response1, "magenta1", f)
-                    if Commands.is_command_(response2.chat_response):
-                        command_response = Commands.process_command_(response2.chat_response, bots)
-                        self._pprint(command_response)
-                    else:
-                        total_mp3_cents += mp3_cost_cents2
-                        break
+            self._log_conversation(bots, filename)
 
-                # Debug info
-                total_llm_cents = bots.bot1.cost_estimate_cents() + bots.bot2.cost_estimate_cents()
-                total_cents = total_mp3_cents + total_llm_cents
-                if self.show_costs:
-                    total_prompt_tokens = bots.bot1.total_prompt_tokens + bots.bot2.total_prompt_tokens
-                    total_completion_tokens = bots.bot1.total_completion_tokens + bots.bot2.total_completion_tokens
-                    total_chars = bots.bot1.total_chars + bots.bot2.total_chars
-                    self._pprint(
-                        "[i][bright_black]"
-                        f"{total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}, "
-                        f"{total_mp3_cents=:.1f}, {total_llm_cents=:.2f}, {total_cents=:.2f}"
-                        # f"{' c2' if mp3_from_cache2 else ''}{' c1' if mp3_from_cache1 else ''}[/bright_black]"
-                        "[/bright_black][i]"
-                    )
+            # Debug info
+            total_llm_cents = bots.bot1.cost_estimate_cents() + bots.bot2.cost_estimate_cents()
+            total_cents = total_mp3_cents + total_llm_cents
+            if self.show_costs:
+                total_prompt_tokens = bots.bot1.total_prompt_tokens + bots.bot2.total_prompt_tokens
+                total_completion_tokens = bots.bot1.total_completion_tokens + bots.bot2.total_completion_tokens
+                total_chars = bots.bot1.total_chars + bots.bot2.total_chars
+                self._pprint(
+                    "[i][bright_black]"
+                    f"{total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}, "
+                    f"{total_mp3_cents=:.1f}, {total_llm_cents=:.2f}, {total_cents=:.2f}"
+                    # f"{' c2' if mp3_from_cache2 else ''}{' c1' if mp3_from_cache1 else ''}[/bright_black]"
+                    "[/bright_black][i]"
+                )
 
-                # Pause if both bots are non-human
-                if not bots.bot1.is_human() and not bots.bot2.is_human():
-                    self._pause_input(bots)
+            # Pause if both bots are non-human
+            if not bots.bot1.is_human() and not bots.bot2.is_human():
+                self._pause_input(bots)
 
-                print()
-                self._pprint(f"[bright_black]{i}.[/bright_black]")
+            print()
+            self._pprint(f"[bright_black]{i}.[/bright_black]")
 
-                # Bot 1 responds to Bot 2
-                while True:
-                    response1, mp3_cost_cents1, mp3_from_cache1 = self._respond_to(bots.bot1, response2, "cyan2", f)
-                    if Commands.is_command_(response1.chat_response):
-                        command_response = Commands.process_command_(response1.chat_response, bots)
-                        self._pprint(command_response)
-                    else:
-                        total_mp3_cents += mp3_cost_cents1
-                        break
+            # Bot 1 responds to Bot 2
+            while True:
+                response1, mp3_cost_cents1, mp3_from_cache1 = self._respond_to(bots.bot1, response2, "cyan2")
+                if Commands.is_command_(response1.chat_response):
+                    command_response = Commands.process_command_(response1.chat_response, bots)
+                    self._pprint(command_response)
+                else:
+                    total_mp3_cents += mp3_cost_cents1
+                    break
+
+            self._log_conversation(bots, filename)
