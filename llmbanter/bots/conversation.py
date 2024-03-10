@@ -1,6 +1,5 @@
 import hashlib
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 
@@ -113,9 +112,6 @@ class Conversation:
         if self.model1.startswith("gpt-4") or self.model2.startswith("gpt-4"):
             self._pprint("[red]WARNING: GPT-4 model activated, watch your costs.[/red]")
 
-        api_key = os.environ.get("OPENAI_API_KEY", None)
-        assert api_key, "OPENAI_API_KEY environment variable must be set"
-
         bots = self._initialise_bots()
         self._pprint("Conversation set up:")
         self._pprint(f"{bots.bot1=}")
@@ -169,9 +165,11 @@ class Conversation:
                 total_chars = bots.bot1.total_chars + bots.bot2.total_chars
                 self._pprint(
                     "[i][bright_black]"
-                    f"{total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}, "
-                    f"{total_mp3_cents=:.1f}, {total_llm_cents=:.2f}, {total_cents=:.2f}"
-                    # f"{' c2' if mp3_from_cache2 else ''}{' c1' if mp3_from_cache1 else ''}[/bright_black]"
+                    f"{total_prompt_tokens=}, {total_completion_tokens=}, {total_chars=}"
+                    f", {total_mp3_cents=:.1f}, {total_llm_cents=:.2f}, {total_cents=:.2f}"
+                    f", model1={self.model1}, model2={self.model2}"
+                    f"{' (llm from cache)' if response1.cache_hit or response2.cache_hit else ''}"
+                    f"{' (mp3 from cache)' if self.speak and (mp3_from_cache2 or mp3_from_cache1) else ''}"
                     "[/bright_black][i]"
                 )
 

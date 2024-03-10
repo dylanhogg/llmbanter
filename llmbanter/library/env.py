@@ -12,7 +12,7 @@ def get(name: str, default: Optional[str] = None) -> str:
     if os.getenv(name):
         return os.environ[name]
 
-    if default:
-        return default
-    else:
+    if default is None:
         raise Exception(f"{name} environment variable is not set.")
+
+    return default

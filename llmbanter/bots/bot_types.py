@@ -47,11 +47,13 @@ class LLMBot(BotBase):
 
         response = llm.get_response(self.clean_name, self.model, self.temperature, self.conversation, self.debug)
         self.conversation.append({"role": "assistant", "content": response.chat_response})
-        # TODO: adjust tokens by cache_hit value!
-        self.total_prompt_tokens += response.prompt_tokens
-        self.total_completion_tokens += response.completion_tokens
-        self.total_tokens += response.total_tokens
-        self.total_chars += len(response.chat_response)
+
+        if not response.cache_hit:
+            # TODO: show this have a cached count and a non-cached count to reflect costs for original queries?
+            self.total_prompt_tokens += response.prompt_tokens
+            self.total_completion_tokens += response.completion_tokens
+            self.total_tokens += response.total_tokens
+            self.total_chars += len(response.chat_response)
 
         response.chat_response = response.chat_response.replace(
             "\\n", "\n"

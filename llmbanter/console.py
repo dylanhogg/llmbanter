@@ -33,9 +33,6 @@ def run(
     ] = consts.default_llm_temperature,
     speak: Annotated[bool, typer.Option(help="Enable speaking")] = False,
     show_costs: Annotated[bool, typer.Option(help="Show costs during usage")] = True,
-    llm_use_localhost: Annotated[
-        int, typer.Option(help="LLM use localhost:8081 instead of openai")
-    ] = consts.default_llm_use_localhost,  # TODO: review llm_use_localhost option, and litellm
     verbose: Annotated[bool, typer.Option(help="Verbose mode")] = False,
     version: Annotated[
         Optional[bool],
@@ -61,7 +58,6 @@ def run(
         expected_typer_args = {
             "bot1",
             "bot2",
-            "llm_use_localhost",
             "model1",
             "model2",
             "show_costs",
@@ -75,12 +71,13 @@ def run(
             typer_args.keys() == expected_typer_args
         ), f"Typer arg list: {list(typer_args.keys())}, was not as expected: {expected_typer_args}"
 
-        llm_api_key = env.get("OPENAI_API_KEY", "")
-        if not llm_use_localhost and not llm_api_key:
+        open_api_key = env.get("OPENAI_API_KEY", "")
+        if (model1 == consts.default_llm_model or model2 == consts.default_llm_model) and open_api_key is None:
             raise AppUsageException(
-                "Expected an environment variable 'OPENAI_API_KEY' to be set to use OpenAI API."
-                "\nSee the OpenAI docs for more info: https://platform.openai.com/docs/quickstart/step-2-setup-your-api-key"
-                "\nAlternatively you can use the '--llm_use_localhost 1' argument to use a local LLM server."
+                f"Expected an environment variable 'OPENAI_API_KEY' to be set to use OpenAI API with model {consts.default_llm_model}."
+                "\nSee the OpenAI docs for more info on setting your OPENAI_API_KEY: https://platform.openai.com/docs/quickstart/step-2-setup-your-api-key"
+                f"\nAlternatively you can use many other providers via LiteLLM which is used under the hood by {consts.package_name}, see: https://litellm.vercel.app/docs/providers"
+                "\n"
             )
 
         conversation = Conversation(config=config)

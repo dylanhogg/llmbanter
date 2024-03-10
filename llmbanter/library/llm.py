@@ -2,16 +2,16 @@ import hashlib
 import pickle
 from pathlib import Path
 
-from litellm import completion
+from litellm import completion, exceptions
 from litellm.utils import ModelResponse
 from loguru import logger
-from tenacity import (
-    retry,
-    retry_if_not_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
 
+# from tenacity import (
+#     retry,
+#     retry_if_not_exception_type,
+#     stop_after_attempt,
+#     wait_exponential,
+# )
 from llmbanter.library import consts
 from llmbanter.library.classes import AppUsageException, Response
 
@@ -26,12 +26,12 @@ def log_retry(state):
         logger.exception(msg)
 
 
-@retry(
-    wait=wait_exponential(multiplier=2, min=5, max=600),
-    stop=stop_after_attempt(2),
-    before_sleep=log_retry,
-    retry=retry_if_not_exception_type(AppUsageException),
-)
+# @retry(
+#     wait=wait_exponential(multiplier=2, min=5, max=600),
+#     stop=stop_after_attempt(2),
+#     before_sleep=log_retry,
+#     retry=retry_if_not_exception_type(AppUsageException | exceptions.APIConnectionError),
+# )
 def _get_response_cached(
     bot_name: str, model: str, temperature: float, messages: list, cache_folder: str = consts.default_cache_folder_llm
 ) -> tuple[ModelResponse, bool]:
@@ -73,7 +73,14 @@ def get_response(bot_name: str, model: str, temperature: float, messages: list, 
     assert len(messages) > 0, f"Expected value for: {messages=}"
     # TODO: assert messages contain a single {"role": "system"} entry
 
-    api_response, cache_hit = _get_response_cached(bot_name, model, temperature, messages)
+    try:
+        api_response, cache_hit = _get_response_cached(bot_name, model, temperature, messages)
+    except exceptions.APIConnectionError as e:
+        raise AppUsageException(
+            f"APIConnectionError: {e}\n"
+            "See https://litellm.vercel.app/docs/providers for additional information on setting LLM provider, keys etc."
+        ) from e
+
     chat_response = api_response.choices[0].message.content  # type: ignore
     total_tokens = int(api_response["usage"]["total_tokens"])
     prompt_tokens = int(api_response["usage"]["prompt_tokens"])

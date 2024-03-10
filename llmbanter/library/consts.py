@@ -9,7 +9,6 @@ default_cache_folder_mp3 = "./.cache/mp3"
 default_cache_folder_llm = "./.cache/llm"
 
 # https://platform.openai.com/docs/api-reference/chat/create
-default_llm_use_localhost = 0
 default_llm_model = "gpt-3.5-turbo"
 default_llm_temperature = 0.7  # Default 1 as per OpenAI docs
 default_llm_top_p = 1  # Default 1 as per OpenAI docs
