@@ -1,7 +1,6 @@
 # LLM Banter
 
-<!-- [![PyPI version](https://badge.fury.io/py/llmbanter.svg?1)](https://badge.fury.io/py/llmbanter) -->
-
+[![PyPI version](https://badge.fury.io/py/llmbanter.svg?1)](https://badge.fury.io/py/llmbanter)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Build](https://github.com/dylanhogg/llmbanter/workflows/build/badge.svg)](https://github.com/dylanhogg/llmbanter/actions/workflows/python-poetry-app.yml)
 [![Latest Tag](https://img.shields.io/github/v/tag/dylanhogg/llmbanter)](https://github.com/dylanhogg/llmbanter/tags)
