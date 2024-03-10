@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "llmbanter"
-version = "0.3.0"
+version = "0.4.1"
 description = "LLM Banter: See 2 large language models (LLMs) banter, debate and chat with each other."
 authors = ["Dylan Hogg <dylanhogg@gmail.com>"]
 license = "MIT"
