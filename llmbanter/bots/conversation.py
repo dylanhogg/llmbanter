@@ -94,7 +94,6 @@ class Conversation:
         with open(filename.with_suffix(".json"), "w") as f:
             # Write serialised bots object
             j = json.dumps(bots, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-            print(f)
             f.write(j)
 
         with open(filename.with_suffix(".txt"), "w") as f:
@@ -107,7 +106,6 @@ class Conversation:
             f.write("\n")
             convo_list = [x["role"] + ": " + x["content"] for i, x in enumerate(bots.bot1.conversation_without_system)]
             convo = "\n\n".join(convo_list)
-            print(f)
             f.write(convo)
             f.write("\n")
 

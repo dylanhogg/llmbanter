@@ -42,7 +42,7 @@ class Commands:
         command = response.strip()
         found_command = getattr(Commands(), command.lstrip(cls.command_indicator))
         command_response = found_command(bots)
-        return command_response
+        return command_response + "\n"
 
     def human1(self, bots: BotPair) -> str:
         human_bot = BotBase.get_human_bot()

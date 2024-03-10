@@ -1,9 +1,10 @@
-import importlib
+import importlib.resources
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 import yaml
+from loguru import logger
 
 from llmbanter.library.classes import AppUsageException, Response
 
@@ -95,6 +96,7 @@ class BotBase(ABC):
 
     @classmethod
     def _get_all_valid_bot_names(cls, include_system: bool = False) -> list[str]:
+        # TODO: fix to read files in local folder or package resources
         all_bot_filenames = cls._get_all_bot_filenames()
         filenames = [
             f.parent.name + "/" + f.name.replace(".yaml", "")
@@ -110,28 +112,49 @@ class BotBase(ABC):
         return cls.get_bot("human")
 
     @classmethod
-    def get_bot(cls, bot_name: str, bot_folder: str = "./bots") -> "BotBase":
-        file_path = None
-        try:
-            if len(bot_name.split("/")) == 2:
-                bot_path = bot_name.split("/")[0]
-                bot_name = bot_name.split("/")[1]
-                file_path = Path(bot_folder) / bot_path / f"{bot_name}.yaml"
-            elif len(bot_name.split("/")) == 1:
-                file_path = Path(bot_folder) / f"{bot_name}.yaml"
-            else:
-                raise AppUsageException(
-                    f"Bot name should be in the format 'bot_type/bot_name' e.g. 'evangelist/instagram'. You specified bot name of '{bot_name}'."
-                )
+    def _get_bot_yaml_file(cls, bot_folder: str, bot_name: str) -> Path:
+        if len(bot_name.split("/")) == 2:
+            # bot_name format 1: 'bot_type/bot_name'
+            bot_path = bot_name.split("/")[0]
+            bot_name = bot_name.split("/")[1]
+            local_path = Path(bot_folder) / bot_path / f"{bot_name}.yaml"
+            resources_file = Path(str(importlib.resources.files("bots").joinpath(f"{bot_path}/{bot_name}.yaml")))
+        elif len(bot_name.split("/")) == 1:
+            # bot_name format 2: 'bot_name'
+            local_path = Path(bot_folder) / f"{bot_name}.yaml"
+            resources_file = Path(str(importlib.resources.files("bots").joinpath(f"{bot_name}.yaml")))
+        else:
+            raise AppUsageException(
+                f"Bot name should be in the format 'bot_type/bot_name' e.g. 'evangelist/instagram'. You specified bot name of '{bot_name}'."
+            )
 
-            # TODO: include and search firstly the local folder for custom bot yaml
+        if local_path.is_file():
+            logger.info(f"Using local yaml file: {local_path}")
+            print(f"Using local bot file: {local_path}")
+            return local_path
+        elif resources_file.is_file():
+            logger.info(f"Using resources yaml file: {resources_file}")
+            # print(f"Using resources bot file: {resources_file}")
+            return resources_file
+
+        raise AppUsageException(
+            f"Bot name '{bot_name}' not found either locally ({local_path}) at in the package resources folder ({resources_file}). "
+            f"Try one of: {cls._get_all_valid_bot_names()}"
+        )
+
+    @classmethod
+    def get_bot(cls, bot_name: str, bot_folder: str = "./bots") -> "BotBase":
+        file_path = cls._get_bot_yaml_file(bot_folder, bot_name)
+        bot_filename = file_path.name.replace(file_path.suffix, "")
+
+        try:
             with open(file_path) as f:
                 data = yaml.safe_load(f)
                 bot_type = data.pop("bot_type")
                 bot_types_module = importlib.import_module("llmbanter.bots.bot_types")
                 DynamicBotClass = getattr(bot_types_module, bot_type)
-                found_bot = DynamicBotClass(**data)
-                found_bot.filename = bot_name
+                found_bot: BotBase = DynamicBotClass(**data)
+                found_bot.filename = bot_filename
                 return found_bot
         except FileNotFoundError as e:
             raise AppUsageException(
