@@ -11,9 +11,9 @@
 
 LLM Banter: See 2 large language models (LLMs) banter, debate and chat with each other.
 
-![Two AI Robots in discussion](https://github.com/dylanhogg/llmbanter/blob/main/docs/img/header.jpg?raw=true)
+NOTE: This project is currently a WIP. Aiming for v1.0 release by end of March 2024.
 
-Currently a WIP.
+![Two AI Robots in discussion](https://github.com/dylanhogg/llmbanter/blob/main/docs/img/header.jpg?raw=true)
 
 ## Installation
 
@@ -21,6 +21,32 @@ You can install [llmbanter](https://pypi.org/project/llmbanter/) using pip, idea
 
 ```bash
 pip install llmbanter
+```
+
+## Usage Examples
+
+Have 2 bots chat with each other:
+
+```bash
+llmbanter expert/psychiatrist famous/einstein
+```
+
+Talk to a Python programming expert:
+
+```bash
+llmbanter expert/python human
+```
+
+Try jail breaking a bot to get it's system prompt etc:
+
+```bash
+llmbanter system/jailbreaker expert/python
+```
+
+Run a bot under a different LLM provider:
+
+```bash
+llmbanter TODO --TODO
 ```
 
 This project is [MIT](https://github.com/dylanhogg/llmbanter/blob/main/LICENSE) licensed.
