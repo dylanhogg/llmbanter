@@ -44,7 +44,7 @@ class Commands:
         command_response = found_command(bots)
         return command_response
 
-    def human1(self, bots) -> str:
+    def human1(self, bots: BotPair) -> str:
         human_bot = BotBase.get_human_bot()
         human_bot.system = bots.bot1.system
         human_bot.conversation = bots.bot1.conversation
@@ -52,7 +52,7 @@ class Commands:
         bots.bot1 = human_bot
         return "Switching bot1 to human..."
 
-    def human2(self, bots) -> str:
+    def human2(self, bots: BotPair) -> str:
         human_bot = BotBase.get_human_bot()
         human_bot.system = bots.bot2.system
         human_bot.conversation = bots.bot2.conversation
@@ -60,31 +60,29 @@ class Commands:
         bots.bot2 = human_bot
         return "Switching bot2 to human..."
 
-    def system1(self, bots) -> str:
+    def system1(self, bots: BotPair) -> str:
         return f"Bot 1 system:\n{bots.bot1.system_message()}"
 
-    def system2(self, bots) -> str:
+    def system2(self, bots: BotPair) -> str:
         return f"Bot 2 system:\n{bots.bot2.system_message()}"
 
-    def conversation1(self, bots) -> str:
-        filtered_conversation = [x for x in bots.bot1.conversation if x["role"] == "user" or x["role"] == "assistant"]
-        return str(filtered_conversation)
+    def conversation1(self, bots: BotPair) -> str:
+        return str(bots.bot1.conversation_without_system)
 
-    def conversation2(self, bots) -> str:
-        filtered_conversation = [x for x in bots.bot2.conversation if x["role"] == "user" or x["role"] == "assistant"]
-        return str(filtered_conversation)
+    def conversation2(self, bots: BotPair) -> str:
+        return str(bots.bot2.conversation_without_system)
 
-    def debug1(self, bots) -> str:
+    def debug1(self, bots: BotPair) -> str:
         bots.bot1.debug = not bots.bot1.debug
         return "Debug mode is now " + ("on" if bots.bot1.debug else "off") + " for bot1."
 
-    def debug2(self, bots) -> str:
+    def debug2(self, bots: BotPair) -> str:
         bots.bot1.debug = not bots.bot1.debug
         return "Debug mode is now " + ("on" if bots.bot2.debug else "off") + " for bot2."
 
-    def help(self, bots) -> str:
+    def help(self, bots: BotPair) -> str:
         methods = [self.command_indicator + command for command in Commands._get_commands()]
         return "List of user commands:\n" + "\n".join(sorted(methods))
 
-    def quit(self, bots) -> str:
+    def quit(self, bots: BotPair) -> str:
         raise typer.Exit()

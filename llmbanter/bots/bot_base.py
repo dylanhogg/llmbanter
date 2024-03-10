@@ -47,6 +47,10 @@ class BotBase(ABC):
     def cost_estimate_cents(self) -> float:
         pass
 
+    @property
+    def conversation_without_system(self) -> list[dict]:
+        return [x for x in self.conversation if x["role"] == "user" or x["role"] == "assistant"]
+
     def is_human(self) -> bool:
         return False
 

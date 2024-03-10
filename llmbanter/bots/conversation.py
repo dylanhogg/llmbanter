@@ -47,7 +47,7 @@ class Conversation:
         folder = Path(f"./{consts.package_name}_conversations/")
         folder.mkdir(parents=True, exist_ok=True)
         filename = (
-            folder / f"{bots.bot1.filename}#{bots.bot1.model}@{bots.bot1.temperature}___"
+            folder / f"{bots.bot1.filename}#{bots.bot1.model}@{bots.bot1.temperature}_"
             f"{bots.bot2.filename}#{bots.bot2.model}@{bots.bot2.temperature}_{hash}_{datetime.today().strftime('%Y%m%d.%H%M%S')}.txt"
         )
         return filename, hash, transcript_header
@@ -91,9 +91,25 @@ class Conversation:
                 break
 
     def _log_conversation(self, bots: BotPair, filename: Path):
-        with open(filename, "w") as f:
+        with open(filename.with_suffix(".json"), "w") as f:
+            # Write serialised bots object
             j = json.dumps(bots, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+            print(f)
             f.write(j)
+
+        with open(filename.with_suffix(".txt"), "w") as f:
+            # Write readable conversation
+            f.write(f"{bots.bot1.name} talking with {bots.bot2.name}\n")
+            f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write("\n")
+            f.write(f"{bots.bot1}\n")
+            f.write(f"{bots.bot2}\n")
+            f.write("\n")
+            convo_list = [x["role"] + ": " + x["content"] for i, x in enumerate(bots.bot1.conversation_without_system)]
+            convo = "\n\n".join(convo_list)
+            print(f)
+            f.write(convo)
+            f.write("\n")
 
     def start(self):
         if self.model1.startswith("gpt-4") or self.model2.startswith("gpt-4"):
