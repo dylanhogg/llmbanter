@@ -1,6 +1,6 @@
 import pytest
 
-from llmbanter.bots.bot_base import BotBase
+from llmbanter.banter.bot_base import BotBase
 from llmbanter.library.classes import AppUsageException
 
 

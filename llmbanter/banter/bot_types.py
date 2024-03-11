@@ -1,7 +1,7 @@
 from loguru import logger
 from rich import print as rprint
 
-from llmbanter.bots.bot_base import BotBase
+from llmbanter.banter.bot_base import BotBase
 from llmbanter.library import llm
 from llmbanter.library.classes import Response
 

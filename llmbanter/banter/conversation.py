@@ -8,8 +8,8 @@ from omegaconf import DictConfig
 from rich import print as rprint
 from rich.console import Console
 
-from llmbanter.bots.bot_base import BotBase
-from llmbanter.bots.bot_pair import BotPair
+from llmbanter.banter.bot_base import BotBase
+from llmbanter.banter.bot_pair import BotPair
 from llmbanter.library import consts
 from llmbanter.library.classes import Response
 from llmbanter.library.commands import Commands

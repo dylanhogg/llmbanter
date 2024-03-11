@@ -6,7 +6,7 @@ from omegaconf import OmegaConf
 from rich import print
 from typing_extensions import Annotated
 
-from llmbanter.bots.conversation import Conversation
+from llmbanter.banter.conversation import Conversation
 from llmbanter.library import consts, env, log
 from llmbanter.library.classes import AppUsageException
 

@@ -1,7 +1,7 @@
 import typer
 
-from llmbanter.bots.bot_base import BotBase
-from llmbanter.bots.bot_pair import BotPair
+from llmbanter.banter.bot_base import BotBase
+from llmbanter.banter.bot_pair import BotPair
 
 
 class Commands:
