@@ -84,24 +84,25 @@ class BotBase(ABC):
         return f"{type(self).__name__}"
 
     @classmethod
-    def _get_all_bot_filenames(cls) -> list[Path]:
+    def _get_all_resources_bot_filenames(cls) -> list[Path]:
         suffix = ".yaml"
         files = []
-        for root, _, filenames in os.walk(cls.bot_folder):
+        resources_folder = Path(
+            importlib.resources.files("bots")._paths[0]  # type: ignore
+        )  # TODO: HACK: Fix the use of _paths[0] and teest across lower Python versions.
+        for root, _, filenames in os.walk(resources_folder):
             for filename in filenames:
                 if filename.endswith(suffix):
                     files.append(Path(os.path.join(root, filename)))
-
         return files
 
     @classmethod
-    def _get_all_valid_bot_names(cls, include_system: bool = False) -> list[str]:
-        # TODO: fix to read files in local folder or package resources
-        all_bot_filenames = cls._get_all_bot_filenames()
+    def get_all_valid_bot_names(cls, include_system: bool = False) -> list[str]:
+        all_bot_filenames = cls._get_all_resources_bot_filenames()
         filenames = [
             f.parent.name + "/" + f.name.replace(".yaml", "")
             for f in all_bot_filenames
-            if include_system or not f.name.startswith("_")
+            if (include_system or not f.name.startswith("_")) and not f.parent.name == "testing"
         ]
         filenames = sorted(filenames)
         filenames = [f.replace(f"{cls.bot_folder}/", "") for f in filenames]  # TODO: HACK: make this better
@@ -130,7 +131,7 @@ class BotBase(ABC):
 
         if local_path.is_file():
             logger.info(f"Using local yaml file: {local_path}")
-            print(f"Using local bot file: {local_path}")
+            # print(f"Using local bot file: {local_path}")
             return local_path
         elif resources_file.is_file():
             logger.info(f"Using resources yaml file: {resources_file}")
@@ -138,8 +139,9 @@ class BotBase(ABC):
             return resources_file
 
         raise AppUsageException(
-            f"Bot name '{bot_name}' not found either locally ({local_path}) at in the package resources folder ({resources_file}). "
-            f"Try one of: {cls._get_all_valid_bot_names()}"
+            f"Given bot name '{bot_name}' was not found locally at ({local_path}) or in the package resources folder ({resources_file}). "
+            f"\nCheck the bot name, or try one of: {', '.join(cls.get_all_valid_bot_names())}"
+            "\n"
         )
 
     @classmethod
@@ -158,7 +160,7 @@ class BotBase(ABC):
                 return found_bot
         except FileNotFoundError as e:
             raise AppUsageException(
-                f"Bot name '{bot_name}' not found at {file_path}. Try one of: {cls._get_all_valid_bot_names()}"
+                f"Bot name '{bot_name}' not found at {file_path}. Try one of: {cls.get_all_valid_bot_names()}"
             ) from e
         except TypeError as e:
             raise AppUsageException(
