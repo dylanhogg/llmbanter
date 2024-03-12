@@ -12,11 +12,11 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 include = [
-    "bots/human.yaml",
-    "bots/assistant.yaml",
-    "bots/system/jailbreaker.yaml",
-    "bots/expert/python.yaml",
-    "bots/expert/shell.yaml",
+    "llmbanter/bots/human.yaml",
+    "llmbanter/bots/assistant.yaml",
+    "llmbanter/bots/system/jailbreaker.yaml",
+    "llmbanter/bots/expert/python.yaml",
+    "llmbanter/bots/expert/shell.yaml",
 ]
 
 [build-system]

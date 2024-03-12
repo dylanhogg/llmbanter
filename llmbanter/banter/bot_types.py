@@ -25,7 +25,8 @@ class LLMBot(BotBase):
         self.conversation = [{"role": "system", "content": self.system}]
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__} {self.filename}.yaml '{self.name}' {self.model}@{self.temperature}"
+        custom_yaml = " (custom)" if self.is_local_file else ""
+        return f"{type(self).__name__} {self.filename}.yaml{custom_yaml} '{self.name}' {self.model}@{self.temperature}"
 
     def system_message(self) -> str:
         system_messages = [x for x in self.conversation if x["role"] == "system"]
@@ -94,9 +95,6 @@ class HumanInputBot(BotBase):
         self.i = 0
         self.multiline = multiline
 
-    def __repr__(self) -> str:
-        return f"{type(self).__name__} '{self.name}'"
-
     def get_opener(self) -> Response:
         assert (
             self.first_bot and self.i == 0
@@ -163,9 +161,6 @@ class FixedResponseBot(BotBase):
         self.model = ""
         self.conversation = []
         self.response_list = response_list
-
-    def __repr__(self) -> str:
-        return f"{type(self).__name__} '{self.name}'"
 
     def respond_to(self, user_input: str) -> Response:
         if self.first_bot and self.i == 0:
