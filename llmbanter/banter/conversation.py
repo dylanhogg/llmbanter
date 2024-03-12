@@ -46,8 +46,9 @@ class Conversation:
         folder = Path(f"./{consts.package_name}_conversations/")
         folder.mkdir(parents=True, exist_ok=True)
         filename = (
-            folder / f"{bots.bot1.filename}#{bots.bot1.model}@{bots.bot1.temperature}_"
-            f"{bots.bot2.filename}#{bots.bot2.model}@{bots.bot2.temperature}_{hash}_{datetime.today().strftime('%Y%m%d.%H%M%S')}.txt"
+            folder / f"{datetime.today().strftime('%Y%m%d-%H%M%S')}_"
+            f"{bots.bot1.filename}#{bots.bot1.model}@{bots.bot1.temperature}_"
+            f"{bots.bot2.filename}#{bots.bot2.model}@{bots.bot2.temperature}_{hash}.txt"
         )
         return filename, hash, transcript_header
 

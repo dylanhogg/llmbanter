@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "llmbanter"
-version = "0.5.0"
+version = "0.5.1"
 description = "LLM Banter: See 2 large language models (LLMs) banter, debate and chat with each other."
 authors = ["Dylan Hogg <dylanhogg@gmail.com>"]
 license = "MIT"
@@ -17,6 +17,9 @@ include = [
     "llmbanter/bots/system/jailbreaker.yaml",
     "llmbanter/bots/expert/python.yaml",
     "llmbanter/bots/expert/shell.yaml",
+    "llmbanter/bots/expert/psychiatrist.yaml",
+    "llmbanter/bots/famous/einstein.yaml",
+    "llmbanter/bots/famous/cobain.yaml",
 ]
 
 [build-system]
